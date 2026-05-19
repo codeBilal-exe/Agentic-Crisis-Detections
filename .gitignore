@@ -1,0 +1,47 @@
+# ===========================
+# CIRO Project — Root .gitignore
+# ===========================
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# === Environment & Secrets ===
+.env
+*.env
+signal_layer/firebase_config/serviceAccountKey.json
+
+# === Flutter / Dart ===
+**/build/
+**/.dart_tool/
+**/.flutter-plugins-dependencies
+**/.packages
+**/pubspec.lock
+
+# === Platform-generated (Flutter) ===
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/ephemeral/
+
+# === IDE ===
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# === OS ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# === Misc ===
+*.log
+*.cache
