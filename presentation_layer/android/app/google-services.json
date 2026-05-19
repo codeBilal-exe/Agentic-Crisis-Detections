@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "698424572962",
+    "firebase_url": "https://agentic-crisis-detection-default-rtdb.firebaseio.com",
+    "project_id": "agentic-crisis-detection",
+    "storage_bucket": "agentic-crisis-detection.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:698424572962:android:9680e315e7f0ad2b7ede7b",
+        "android_client_info": {
+          "package_name": "com.ciro.ciro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjLPy-PXXff5EcutaaiGPOp1_i59EaP0k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
