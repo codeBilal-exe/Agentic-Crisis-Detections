@@ -25,7 +25,7 @@ Antigravity serves as the core orchestration brain via its Manager Surface:
 | The Commander | Response action planning | CrisisProfile | ActionPlan JSON |
 | The Dispatcher | Execution simulation & Firebase writes | ActionPlan | ExecutionLog JSON |
 
-Agent prompts are in `/antigravity/`. Combined Agent Trace log exported as artifact.
+Agent prompts are in `/intelligence_layer/`. Combined Agent Trace log exported as artifact.
 
 ## Tools & APIs Used
 
@@ -40,9 +40,9 @@ Agent prompts are in `/antigravity/`. Combined Agent Trace log exported as artif
 
 ## How to Run
 
-### 1. Start the Mock Signal Server
+### 1. Start the Signal Layer (FastAPI Mock Server)
 ```bash
-cd ciro/backend
+cd signal_layer
 pip install -r requirements.txt
 cp .env.example .env  # add your Firebase Database URL
 uvicorn main:app --reload --port 8000
@@ -51,12 +51,12 @@ uvicorn main:app --reload --port 8000
 ### 2. Initialize Firebase
 - Create Firebase project at console.firebase.google.com
 - Enable Realtime Database
-- Download serviceAccountKey.json → place in backend/firebase_config/
+- Download serviceAccountKey.json → place in signal_layer/firebase_config/
 - Run reset: `POST http://localhost:8000/api/simulation/reset`
 
-### 3. Build and Run Flutter App
+### 3. Build and Run Presentation Layer (Flutter Mobile App)
 ```bash
-cd ciro/flutter_app
+cd presentation_layer
 flutter pub get
 flutterfire configure  # connect to your Firebase project
 flutter run
@@ -64,7 +64,7 @@ flutter run
 
 ### 4. Run Antigravity Pipeline
 - Open Antigravity Manager Surface
-- Load agent prompts from /antigravity/ folder
+- Load agent prompts from /intelligence_layer/ folder
 - Trigger scenario via Flutter app or API
 - Execute Manager pipeline
 

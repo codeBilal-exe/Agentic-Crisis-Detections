@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AppColors {
   // Background hierarchy
@@ -53,7 +54,7 @@ class FirebasePaths {
 }
 
 class ApiEndpoints {
-  static const String baseUrl            = 'http://10.0.2.2:8000'; // Android emulator localhost
+  static String get baseUrl => kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
   static const String triggerScenario    = '/api/simulation/trigger';
   static const String resetSimulation    = '/api/simulation/reset';
   static const String simulationStatus   = '/api/simulation/status';
