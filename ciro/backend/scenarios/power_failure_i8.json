@@ -1,0 +1,21 @@
+{
+  "scenario_id": "power_failure_i8",
+  "scenario_name": "Infrastructure Failure — I-8 Power Grid",
+  "crisis_type": "infrastructure_failure",
+  "location": "I-8 Sector, Islamabad",
+  "severity": "MEDIUM",
+  "signal_count": 6,
+  "description": "Grid transformer explosion in I-8. Power out for 8,000 homes. Fire risk.",
+  "social_signals_to_inject": [
+    "Bada dhamaka hua I-8 mein. Bijli ka transformer phat gaya. Kala dhuan!",
+    "I-8 transformer explosion. Fire visible. Evacuate nearby area!",
+    "I-8 sector blackout. Smells like burning plastic everywhere.",
+    "IESCO please fix the transformer in I-8/4. Entire sector without power."
+  ],
+  "weather_condition": { "type": "CLEAR", "severity": "NONE" },
+  "expected_response": {
+    "units_to_dispatch": ["1122-ISB-03"],
+    "agencies_to_notify": ["IESCO", "CDA", "Police"],
+    "estimated_resolution_minutes": 120
+  }
+}

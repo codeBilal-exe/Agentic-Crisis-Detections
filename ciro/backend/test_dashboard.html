@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIRO — Test Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #080C14;
+      --bg-card: #0F1624;
+      --bg-elevated: #16213A;
+      --border: #1E2D4A;
+      --accent-blue: #0A84FF;
+      --accent-cyan: #00D4FF;
+      --sev-critical: #FF2D55;
+      --sev-high: #FF6B35;
+      --sev-medium: #FFCC00;
+      --sev-low: #30D158;
+      --sev-none: #636366;
+      --status-available: #30D158;
+      --status-dispatched: #FF9F0A;
+      --status-onscene: #0A84FF;
+      --text-primary: #FFFFFF;
+      --text-secondary: #8E8E93;
+      --text-tertiary: #48484A;
+      --agent-sentinel: #00D4FF;
+      --agent-analyst: #9B59B6;
+      --agent-commander: #FF9F0A;
+      --agent-dispatcher: #30D158;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    .header {
+      padding: 20px 30px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(10,132,255,0.06), rgba(0,212,255,0.03));
+    }
+
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--accent-blue);
+      letter-spacing: 6px;
+    }
+
+    .header-info {
+      flex: 1;
+    }
+
+    .header-info h2 {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 400;
+      letter-spacing: 1px;
+    }
+
+    .header-info .test-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      background: var(--sev-medium);
+      color: #000;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    #statusBadge {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid;
+      transition: all 0.3s ease;
+    }
+
+    .status-monitoring {
+      background: rgba(10,132,255,0.15);
+      border-color: var(--accent-blue) !important;
+      color: var(--accent-blue);
+    }
+
+    .status-crisis {
+      background: rgba(255,45,85,0.15);
+      border-color: var(--sev-critical) !important;
+      color: var(--sev-critical);
+      animation: pulse-border 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,45,85,0.3); }
+      50% { box-shadow: 0 0 12px 4px rgba(255,45,85,0.2); }
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 20px 30px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: border-color 0.3s ease;
+    }
+
+    .card:hover { border-color: var(--accent-blue); }
+
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title .count {
+      padding: 2px 8px;
+      background: var(--accent-blue);
+      border-radius: 10px;
+      font-size: 11px;
+      color: white;
+    }
+
+    .full-width { grid-column: 1 / -1; }
+
+    /* Scenario Buttons */
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .scenario-btn {
+      padding: 14px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .scenario-btn:hover {
+      border-color: var(--accent-blue);
+      background: rgba(10,132,255,0.1);
+      transform: translateY(-2px);
+    }
+
+    .scenario-btn .emoji { font-size: 24px; display: block; margin-bottom: 6px; }
+    .scenario-btn .sev {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    .reset-btn {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid var(--sev-critical);
+      border-radius: 10px;
+      color: var(--sev-critical);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .reset-btn:hover {
+      background: rgba(255,45,85,0.1);
+    }
+
+    /* Signals */
+    .signal-item {
+      padding: 10px 14px;
+      background: var(--bg-elevated);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--accent-cyan);
+      font-size: 12px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .signal-item.crisis {
+      border-left-color: var(--sev-critical);
+      background: rgba(255,45,85,0.05);
+    }
+
+    .signal-item .source {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--text-tertiary);
+      margin-bottom: 4px;
+    }
+
+    .signal-item .text {
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .signal-item .location {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--accent-cyan);
+      margin-top: 4px;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Weather & Traffic */
+    .weather-alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .weather-clear {
+      background: rgba(48,209,88,0.08);
+      border: 1px solid rgba(48,209,88,0.3);
+      color: var(--status-available);
+    }
+
+    .weather-warning {
+      background: rgba(255,107,53,0.08);
+      border: 1px solid rgba(255,107,53,0.3);
+      color: var(--sev-high);
+    }
+
+    .weather-emergency {
+      background: rgba(255,45,85,0.08);
+      border: 1px solid rgba(255,45,85,0.3);
+      color: var(--sev-critical);
+    }
+
+    .traffic-seg {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg-elevated);
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .traffic-bar {
+      width: 60px;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .traffic-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .traffic-seg .anomaly {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      padding: 2px 6px;
+      background: rgba(255,45,85,0.15);
+      color: var(--sev-critical);
+      border-radius: 4px;
+    }
+
+    /* Units */
+    .unit-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--bg-elevated);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      transition: border-color 0.3s;
+      border: 1px solid transparent;
+    }
+
+    .unit-card.dispatched {
+      border-color: var(--status-dispatched);
+      background: rgba(255,159,10,0.05);
+    }
+
+    .unit-emoji { font-size: 28px; }
+
+    .unit-info { flex: 1; }
+    .unit-info .name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .unit-info .id { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-tertiary); }
+
+    .unit-status {
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast-success {
+      background: rgba(48,209,88,0.95);
+      color: white;
+      box-shadow: 0 8px 30px rgba(48,209,88,0.3);
+    }
+
+    .toast-error {
+      background: rgba(255,45,85,0.95);
+      color: white;
+      box-shadow: 0 8px 30px rgba(255,45,85,0.3);
+    }
+
+    .toast-info {
+      background: rgba(10,132,255,0.95);
+      color: white;
+      box-shadow: 0 8px 30px rgba(10,132,255,0.3);
+    }
+
+    /* Scrollable containers */
+    .scroll-container {
+      max-height: 320px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .scroll-container::-webkit-scrollbar { width: 4px; }
+    .scroll-container::-webkit-scrollbar-track { background: transparent; }
+    .scroll-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 30px;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+
+    .empty-state .icon { font-size: 36px; margin-bottom: 8px; }
+
+    /* Loading shimmer */
+    .loading {
+      background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-card) 50%, var(--bg-elevated) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+      height: 40px;
+      margin-bottom: 8px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .auto-refresh {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .auto-refresh .dot {
+      width: 6px; height: 6px;
+      background: var(--status-available);
+      border-radius: 50%;
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">CIRO</div>
+    <div class="header-info">
+      <h2>Crisis Intelligence & Response Orchestrator</h2>
+      <span class="test-badge">⚡ TEST DASHBOARD — NO FIREBASE REQUIRED</span>
+    </div>
+    <div id="statusBadge" class="status-monitoring">MONITORING</div>
+    <div class="auto-refresh">
+      <span class="dot"></span>
+      Auto-refresh: 3s
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Control Panel -->
+    <div class="card full-width">
+      <div class="card-title">⚡ SIMULATION CONTROL</div>
+      <div class="scenario-grid">
+        <button class="scenario-btn" onclick="triggerScenario('urban_flood_g10')">
+          <span class="emoji">🌊</span>
+          G-10 Urban Flood
+          <span class="sev" style="background:rgba(255,107,53,0.2);color:var(--sev-high)">HIGH</span>
+        </button>
+        <button class="scenario-btn" onclick="triggerScenario('road_accident_m2')">
+          <span class="emoji">🚗</span>
+          M-2 Road Accident
+          <span class="sev" style="background:rgba(255,45,85,0.2);color:var(--sev-critical)">CRITICAL</span>
+        </button>
+        <button class="scenario-btn" onclick="triggerScenario('heatwave_lahore')">
+          <span class="emoji">🌡️</span>
+          Lahore Heatwave
+          <span class="sev" style="background:rgba(255,45,85,0.2);color:var(--sev-critical)">CRITICAL</span>
+        </button>
+        <button class="scenario-btn" onclick="triggerScenario('power_failure_i8')">
+          <span class="emoji">⚡</span>
+          I-8 Power Failure
+          <span class="sev" style="background:rgba(255,204,0,0.2);color:var(--sev-medium)">MEDIUM</span>
+        </button>
+      </div>
+      <button class="reset-btn" onclick="resetSimulation()">🔄 RESET SYSTEM TO MONITORING BASELINE</button>
+    </div>
+
+    <!-- Social Signals -->
+    <div class="card">
+      <div class="card-title">📱 SOCIAL MEDIA SIGNALS <span id="signalCount" class="count">0</span></div>
+      <div id="signalFeed" class="scroll-container">
+        <div class="empty-state"><div class="icon">📡</div>Waiting for signals...</div>
+      </div>
+    </div>
+
+    <!-- Weather + Traffic -->
+    <div class="card">
+      <div class="card-title">🌤 WEATHER & TRAFFIC</div>
+      <div id="weatherSection" style="margin-bottom:14px">
+        <div class="loading"></div>
+      </div>
+      <div class="card-title" style="font-size:12px; margin-top:10px">🚗 TRAFFIC SEGMENTS</div>
+      <div id="trafficSection">
+        <div class="loading"></div>
+      </div>
+    </div>
+
+    <!-- Units -->
+    <div class="card">
+      <div class="card-title">🚨 RESCUE UNITS <span id="unitCount" class="count">0</span></div>
+      <div id="unitSection" class="scroll-container">
+        <div class="loading"></div>
+        <div class="loading"></div>
+        <div class="loading"></div>
+      </div>
+    </div>
+
+    <!-- Scenarios Available -->
+    <div class="card">
+      <div class="card-title">📋 AVAILABLE SCENARIOS</div>
+      <div id="scenarioList" class="scroll-container">
+        <div class="loading"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const BASE = 'http://localhost:8000';
+    let currentMode = 'monitoring';
+
+    // Toast notifications
+    function showToast(message, type = 'info') {
+      const t = document.getElementById('toast');
+      t.textContent = message;
+      t.className = `toast toast-${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    // Trigger scenario
+    async function triggerScenario(name) {
+      try {
+        const r = await fetch(`${BASE}/api/simulation/trigger/${name}`, { method: 'POST' });
+        const d = await r.json();
+        showToast(`✅ ${d.message}`, 'success');
+        currentMode = 'crisis';
+        updateStatus('CRISIS ACTIVE');
+        refreshAll();
+      } catch (e) {
+        showToast(`❌ Server error: ${e.message}`, 'error');
+      }
+    }
+
+    // Reset
+    async function resetSimulation() {
+      try {
+        const r = await fetch(`${BASE}/api/simulation/reset`, { method: 'POST' });
+        const d = await r.json();
+        showToast(`🔄 ${d.message}`, 'info');
+        currentMode = 'monitoring';
+        updateStatus('MONITORING');
+        refreshAll();
+      } catch (e) {
+        showToast(`❌ Server error: ${e.message}`, 'error');
+      }
+    }
+
+    function updateStatus(mode) {
+      const badge = document.getElementById('statusBadge');
+      badge.textContent = mode;
+      badge.className = mode.includes('CRISIS') ? 'status-crisis' : 'status-monitoring';
+    }
+
+    // Fetch & render signals
+    async function fetchSignals() {
+      try {
+        const r = await fetch(`${BASE}/api/signals/all`);
+        const d = await r.json();
+        renderSignals(d.social);
+        renderWeather(d.weather);
+        renderTraffic(d.traffic);
+      } catch (e) {
+        console.error('Signal fetch error:', e);
+      }
+    }
+
+    function renderSignals(signals) {
+      const feed = document.getElementById('signalFeed');
+      document.getElementById('signalCount').textContent = signals.length;
+
+      const normalTexts = ['Traffic moving', 'Nice weather', 'parking is crowded', 'office hours', 'clear and scenic'];
+
+      feed.innerHTML = signals.map(s => {
+        const isCrisis = !normalTexts.some(n => s.raw_text.includes(n));
+        return `<div class="signal-item ${isCrisis ? 'crisis' : ''}">
+          <div class="source">${s.metadata?.platform || 'unknown'} · ${s.metadata?.language_detected || ''} · score: ${s.metadata?.engagement_score || 0}</div>
+          <div class="text">${s.raw_text}</div>
+          <div class="location">📍 ${s.location?.area}, ${s.location?.city}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderWeather(alerts) {
+      const sec = document.getElementById('weatherSection');
+      sec.innerHTML = alerts.map(a => {
+        let cls = 'weather-clear';
+        if (a.severity === 'WARNING' || a.severity === 'WATCH') cls = 'weather-warning';
+        if (a.severity === 'EMERGENCY') cls = 'weather-emergency';
+        return `<div class="weather-alert ${cls}">
+          <strong>${a.type}</strong> — ${a.severity}<br>
+          <span style="font-size:12px;opacity:0.8">${a.message}</span><br>
+          <span style="font-family:'JetBrains Mono';font-size:10px;opacity:0.6">${a.area} · ${a.issued_by}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function renderTraffic(segments) {
+      const sec = document.getElementById('trafficSection');
+      sec.innerHTML = segments.map(s => {
+        const score = s.congestion_score;
+        let color = 'var(--status-available)';
+        if (score > 70) color = 'var(--sev-critical)';
+        else if (score > 50) color = 'var(--sev-medium)';
+        else if (score > 30) color = 'var(--status-dispatched)';
+        return `<div class="traffic-seg">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:12px">${s.road_name}</div>
+          </div>
+          <div class="traffic-bar"><div class="traffic-bar-fill" style="width:${score}%;background:${color}"></div></div>
+          <span style="font-family:'JetBrains Mono';font-size:11px;color:${color};font-weight:700;min-width:30px;text-align:right">${score}%</span>
+          ${s.anomaly_detected ? `<span class="anomaly">⚠ ${s.anomaly_type}</span>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    // Fetch & render units
+    async function fetchUnits() {
+      try {
+        const r = await fetch(`${BASE}/api/units/available`);
+        const d = await r.json();
+        document.getElementById('unitCount').textContent = `${d.available}/${d.total}`;
+        const typeIcons = { flood_rescue: '🚤', medical: '🚑', fire: '🚒', pdma_assessment: '📋', general_rescue: '🚐' };
+        const sec = document.getElementById('unitSection');
+        sec.innerHTML = d.units.map(u => {
+          const isDispatched = u.status === 'dispatched';
+          let statusColor = 'var(--status-available)';
+          if (u.status === 'dispatched') statusColor = 'var(--status-dispatched)';
+          else if (u.status === 'on_scene') statusColor = 'var(--status-onscene)';
+          else if (u.status === 'standby') statusColor = 'var(--sev-none)';
+          return `<div class="unit-card ${isDispatched ? 'dispatched' : ''}">
+            <div class="unit-emoji">${typeIcons[u.type] || '🚐'}</div>
+            <div class="unit-info">
+              <div class="name">${u.name}</div>
+              <div class="id">${u.unit_id} · ${u.type.replace('_', ' ')}</div>
+              ${u.destination ? `<div style="font-size:11px;color:var(--status-dispatched);margin-top:2px">→ ${u.destination} (ETA: ${u.eta_minutes}min)</div>` : ''}
+            </div>
+            <div class="unit-status" style="background:${statusColor}20;border:1px solid ${statusColor}">
+              <span class="status-dot" style="background:${statusColor}"></span>
+              <span style="color:${statusColor}">${u.status?.toUpperCase()}</span>
+            </div>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        console.error('Units fetch error:', e);
+      }
+    }
+
+    // Fetch scenarios
+    async function fetchScenarios() {
+      try {
+        const r = await fetch(`${BASE}/api/simulation/scenarios`);
+        const d = await r.json();
+        const sec = document.getElementById('scenarioList');
+        const typeEmoji = { urban_flooding: '🌊', road_accident: '🚗', heatwave: '🌡️', infrastructure_failure: '⚡' };
+        const sevColor = { HIGH: 'var(--sev-high)', CRITICAL: 'var(--sev-critical)', MEDIUM: 'var(--sev-medium)', LOW: 'var(--sev-low)' };
+        sec.innerHTML = d.scenarios.map(s => `
+          <div style="padding:12px 14px;background:var(--bg-elevated);border-radius:10px;margin-bottom:8px">
+            <div style="font-weight:600;font-size:13px">${typeEmoji[s.crisis_type] || '⚠️'} ${s.scenario_name}</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${s.description}</div>
+            <div style="margin-top:6px;display:flex;gap:8px;align-items:center">
+              <span style="font-family:'JetBrains Mono';font-size:9px;padding:2px 6px;border-radius:4px;background:${sevColor[s.severity]}20;color:${sevColor[s.severity]}">${s.severity}</span>
+              <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--text-tertiary)">${s.location}</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error('Scenarios fetch error:', e);
+      }
+    }
+
+    function refreshAll() {
+      fetchSignals();
+      fetchUnits();
+    }
+
+    // Initial load
+    fetchSignals();
+    fetchUnits();
+    fetchScenarios();
+
+    // Auto-refresh every 3 seconds
+    setInterval(refreshAll, 3000);
+  </script>
+</body>
+</html>

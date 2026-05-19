@@ -1,0 +1,32 @@
+{
+  "scenario_id": "road_accident_m2",
+  "scenario_name": "Multi-Vehicle Accident — M-2 Motorway",
+  "crisis_type": "road_accident",
+  "location": "M-2 Motorway (Islamabad-Lahore), KM 45",
+  "severity": "CRITICAL",
+  "signal_count": 5,
+  "description": "Multi-vehicle pile-up on M-2 near Bhera interchange. Multiple casualties reported.",
+  "social_signals_to_inject": [
+    "Huge accident on M-2 motorway near Bhera! Multiple cars involved. Need ambulance immediately!",
+    "M-2 pe bada accident hua hai. Blood on road. Someone call rescue!",
+    "M2 completely blocked near KM45. Serious accident. Motorway police on scene.",
+    "3 gaariyan takra gayi hain M-2 pe. Bohot bura manzar hai bhai",
+    "M-2 accident - ambulances needed urgently at KM 45"
+  ],
+  "weather_condition": {
+    "type": "FOG",
+    "severity": "WATCH",
+    "visibility_m": 50
+  },
+  "traffic_hotspot": {
+    "road": "M-2 Motorway KM 45",
+    "congestion_score": 100,
+    "direction": "both"
+  },
+  "expected_response": {
+    "units_to_dispatch": ["1122-ISB-02", "1122-ISB-01"],
+    "secondary_units": ["pdma-team-01"],
+    "reroute": "N-5 National Highway via Bhera",
+    "estimated_resolution_minutes": 60
+  }
+}

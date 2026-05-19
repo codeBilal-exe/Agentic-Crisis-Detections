@@ -1,0 +1,32 @@
+{
+  "scenario_id": "urban_flood_g10",
+  "scenario_name": "Urban Flood — G-10 Islamabad",
+  "crisis_type": "urban_flooding",
+  "location": "G-10, Islamabad",
+  "severity": "HIGH",
+  "signal_count": 8,
+  "description": "Monsoon flash flood in G-10 sector. Main road blocked. Vehicles stranded.",
+  "social_signals_to_inject": [
+    "G-10 mein pani bhar gaya hai, gaariyan phans gayi hain",
+    "G10 sector completely flooded. Main road blocked. Rescue needed ASAP!",
+    "IJP Road G-10 crossing completely under water",
+    "Rescue 1122 kab aayega? G-10 main road pe gaariyan phas gayi hain"
+  ],
+  "weather_condition": {
+    "type": "HEAVY_RAINFALL",
+    "severity": "WARNING",
+    "rainfall_mm": 85
+  },
+  "traffic_hotspot": {
+    "road": "G-10 Markaz Road",
+    "congestion_score": 96,
+    "secondary_road": "IJP Road",
+    "secondary_score": 82
+  },
+  "expected_response": {
+    "units_to_dispatch": ["1122-ISB-04"],
+    "secondary_units": ["pdma-team-01"],
+    "reroute": "Srinagar Highway",
+    "estimated_resolution_minutes": 45
+  }
+}

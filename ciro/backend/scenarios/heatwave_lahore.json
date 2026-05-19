@@ -1,0 +1,25 @@
+{
+  "scenario_id": "heatwave_lahore",
+  "scenario_name": "Extreme Heatwave — Lahore",
+  "crisis_type": "heatwave",
+  "location": "Lahore (citywide)",
+  "severity": "CRITICAL",
+  "signal_count": 12,
+  "description": "Extreme heat event in Lahore (52°C). Multiple heatstroke cases. Power outages compounding.",
+  "social_signals_to_inject": [
+    "52 degree garmi Lahore mein. 3 log behosh ho gaye near Data Darbar",
+    "Lahore is on FIRE. Heatstroke casualties being reported from multiple areas",
+    "Bijli nahi aur itni garmi. Hospitals overwhelmed. Where is government?",
+    "Old city area Lahore - elderly and children affected by extreme heat. Need help."
+  ],
+  "weather_condition": {
+    "type": "EXTREME_HEAT",
+    "severity": "EMERGENCY",
+    "temperature_c": 52
+  },
+  "expected_response": {
+    "units_to_dispatch": ["1122-LHR-02", "1122-LHR-03"],
+    "cooling_centers_to_activate": ["Data Darbar Relief Point", "Anarkali Community Hall"],
+    "estimated_resolution_minutes": 240
+  }
+}

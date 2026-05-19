@@ -1,0 +1,100 @@
+{
+  "tools": [
+    {
+      "name": "fetch_signals",
+      "description": "Fetch all signal data (social, weather, traffic) from the CIRO Mock Signal Server",
+      "type": "http",
+      "method": "GET",
+      "url": "http://localhost:8000/api/signals/all",
+      "used_by": ["Sentinel"]
+    },
+    {
+      "name": "fetch_social_signals",
+      "description": "Fetch social media signals only",
+      "type": "http",
+      "method": "GET",
+      "url": "http://localhost:8000/api/signals/social?limit=15",
+      "used_by": ["Sentinel"]
+    },
+    {
+      "name": "fetch_weather",
+      "description": "Fetch weather alert data",
+      "type": "http",
+      "method": "GET",
+      "url": "http://localhost:8000/api/signals/weather",
+      "used_by": ["Sentinel"]
+    },
+    {
+      "name": "fetch_traffic",
+      "description": "Fetch traffic congestion data",
+      "type": "http",
+      "method": "GET",
+      "url": "http://localhost:8000/api/signals/traffic",
+      "used_by": ["Sentinel"]
+    },
+    {
+      "name": "fetch_available_units",
+      "description": "Get list of all rescue units and their current status",
+      "type": "http",
+      "method": "GET",
+      "url": "http://localhost:8000/api/units/available",
+      "used_by": ["Commander"]
+    },
+    {
+      "name": "dispatch_unit",
+      "description": "Simulate dispatching a rescue unit to a crisis location",
+      "type": "http",
+      "method": "POST",
+      "url": "http://localhost:8000/api/units/dispatch",
+      "body_schema": {
+        "unit_id": "string",
+        "destination": "string",
+        "crisis_id": "string",
+        "eta_minutes": "integer",
+        "destination_lat": "float (optional)",
+        "destination_lng": "float (optional)"
+      },
+      "used_by": ["Dispatcher"]
+    },
+    {
+      "name": "trigger_scenario",
+      "description": "Activate a pre-built crisis scenario",
+      "type": "http",
+      "method": "POST",
+      "url": "http://localhost:8000/api/simulation/trigger/{scenario_name}",
+      "used_by": ["Manager"]
+    },
+    {
+      "name": "reset_simulation",
+      "description": "Reset all system state to clean baseline",
+      "type": "http",
+      "method": "POST",
+      "url": "http://localhost:8000/api/simulation/reset",
+      "used_by": ["Manager"]
+    },
+    {
+      "name": "firebase_write",
+      "description": "Write data to Firebase Realtime Database at a specified path",
+      "type": "firebase_admin",
+      "operations": ["set", "update", "push"],
+      "paths": [
+        "/active_crises/{crisis_id}",
+        "/units/{unit_id}",
+        "/alerts/{alert_id}",
+        "/routes/active_reroutes/{reroute_id}",
+        "/agent_logs/{log_id}",
+        "/system_state",
+        "/outcome_metrics"
+      ],
+      "used_by": ["Analyst", "Dispatcher"]
+    },
+    {
+      "name": "firebase_read",
+      "description": "Read data from Firebase Realtime Database",
+      "type": "firebase_admin",
+      "operations": ["get"],
+      "paths": ["/system_state", "/active_crises", "/units", "/outcome_metrics"],
+      "used_by": ["Analyst", "Commander", "Dispatcher"]
+    }
+  ]
+}
