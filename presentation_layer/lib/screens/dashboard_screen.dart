@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:shimmer/shimmer.dart';
 import '../core/constants.dart';
 import '../providers/crisis_provider.dart';
+import '../providers/language_provider.dart';
+import '../providers/simulation_provider.dart';
 import '../models/crisis_model.dart';
 import '../models/unit_model.dart';
 
@@ -46,6 +48,15 @@ class DashboardScreen extends ConsumerWidget {
             error: (_, __) => const SizedBox(),
           ),
         ]),
+        actions: [
+          IconButton(
+            icon: Text(
+              ref.watch(languageProvider) == AppLanguage.english ? 'اردو' : 'EN',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            onPressed: () => ref.read(languageProvider.notifier).toggleLanguage(),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

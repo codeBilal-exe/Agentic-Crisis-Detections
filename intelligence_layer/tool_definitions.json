@@ -2,99 +2,152 @@
   "tools": [
     {
       "name": "fetch_signals",
-      "description": "Fetch all signal data (social, weather, traffic) from the CIRO Mock Signal Server",
-      "type": "http",
+      "description": "Fetch all signals (social, weather, traffic) from the CIRO Signal Server in a single aggregated call. Returns bundle_id, timestamp, social array (mock + real news), weather array (real Open-Meteo + mock PMD), and traffic array. This is the primary tool for the Sentinel agent.",
       "method": "GET",
       "url": "http://localhost:8000/api/signals/all",
-      "used_by": ["Sentinel"]
+      "used_by": ["Sentinel"],
+      "response_schema": {
+        "bundle_id": "string — unique bundle identifier",
+        "timestamp": "string — ISO 8601 timestamp",
+        "social": "array of RawSignal objects (mock + news)",
+        "weather": "array of WeatherAlert objects (real + mock)",
+        "traffic": "array of TrafficSegment objects",
+        "real_apis": {
+          "weather": "boolean — true if Open-Meteo data included",
+          "news": "boolean — true if NewsAPI data included"
+        }
+      }
     },
     {
       "name": "fetch_social_signals",
-      "description": "Fetch social media signals only",
-      "type": "http",
+      "description": "Fetch only social media signals with optional limit parameter. Returns mock crisis/normal signals plus real news signals when available.",
       "method": "GET",
       "url": "http://localhost:8000/api/signals/social?limit=15",
-      "used_by": ["Sentinel"]
+      "used_by": ["Sentinel"],
+      "parameters": {
+        "limit": "integer (query param, optional, default=10, max=50)"
+      }
     },
     {
       "name": "fetch_weather",
-      "description": "Fetch weather alert data",
-      "type": "http",
+      "description": "Fetch weather alerts for Pakistan cities. Returns real Open-Meteo data when available (4 cities: Islamabad, Lahore, Karachi, Rawalpindi), combined with mock PMD alerts for crisis scenarios.",
       "method": "GET",
       "url": "http://localhost:8000/api/signals/weather",
-      "used_by": ["Sentinel"]
+      "used_by": ["Sentinel"],
+      "response_schema": {
+        "source": "string — 'open_meteo_real+pmd_mock' or 'pakistan_met_department_mock'",
+        "timestamp": "string — ISO 8601",
+        "alerts": "array of WeatherAlert objects",
+        "real_data_available": "boolean"
+      }
     },
     {
       "name": "fetch_traffic",
-      "description": "Fetch traffic congestion data",
-      "type": "http",
+      "description": "Fetch traffic congestion data for major road segments in Pakistan. Congestion scores 0-100, anomaly threshold at 70+.",
       "method": "GET",
       "url": "http://localhost:8000/api/signals/traffic",
-      "used_by": ["Sentinel"]
+      "used_by": ["Sentinel"],
+      "response_schema": {
+        "source": "string — 'google_maps_traffic_mock'",
+        "timestamp": "string — ISO 8601",
+        "segments": "array of TrafficSegment objects with congestion_score, anomaly_detected"
+      }
     },
     {
       "name": "fetch_available_units",
-      "description": "Get list of all rescue units and their current status",
-      "type": "http",
+      "description": "Fetch all rescue units with current status, location, and availability. Returns summary counts and full unit array. Used by Commander for intelligent unit selection.",
       "method": "GET",
       "url": "http://localhost:8000/api/units/available",
-      "used_by": ["Commander"]
+      "used_by": ["Commander"],
+      "response_schema": {
+        "total": "integer — total unit count",
+        "available": "integer — units with status 'available'",
+        "dispatched": "integer — units currently dispatched",
+        "units": "array of Unit objects with unit_id, name, type, status, base_lat, base_lng, current_lat, current_lng, destination, eta_minutes, assigned_crisis_id"
+      }
     },
     {
       "name": "dispatch_unit",
-      "description": "Simulate dispatching a rescue unit to a crisis location",
-      "type": "http",
+      "description": "Dispatch a specific rescue unit to a crisis location. Updates unit status to 'dispatched' in Firebase, sets destination, ETA, and assigned crisis. Optionally updates unit position to midpoint toward destination.",
       "method": "POST",
       "url": "http://localhost:8000/api/units/dispatch",
+      "used_by": ["Dispatcher"],
       "body_schema": {
-        "unit_id": "string",
-        "destination": "string",
-        "crisis_id": "string",
-        "eta_minutes": "integer",
-        "destination_lat": "float (optional)",
-        "destination_lng": "float (optional)"
-      },
-      "used_by": ["Dispatcher"]
+        "unit_id": "string (required) — e.g., '1122-ISB-04'",
+        "destination": "string (required) — e.g., 'G-10 Markaz, Islamabad'",
+        "crisis_id": "string (required) — e.g., 'crisis_abc123'",
+        "eta_minutes": "integer (required) — estimated time of arrival",
+        "destination_lat": "float (optional) — destination latitude",
+        "destination_lng": "float (optional) — destination longitude"
+      }
     },
     {
       "name": "trigger_scenario",
-      "description": "Activate a pre-built crisis scenario",
-      "type": "http",
+      "description": "Trigger a pre-built crisis scenario by name. Activates crisis signals on the signal generator and sets system to simulation mode in Firebase.",
       "method": "POST",
       "url": "http://localhost:8000/api/simulation/trigger/{scenario_name}",
-      "used_by": ["Manager"]
+      "used_by": ["Manager"],
+      "path_params": {
+        "scenario_name": "string — one of: urban_flood_g10, road_accident_m2, heatwave_lahore, power_failure_i8"
+      },
+      "response_schema": {
+        "status": "string — 'scenario_activated'",
+        "scenario": "string — scenario name",
+        "crisis_type": "string — e.g., 'urban_flooding'"
+      }
     },
     {
       "name": "reset_simulation",
-      "description": "Reset all system state to clean baseline",
-      "type": "http",
+      "description": "Reset all Firebase state to monitoring baseline. Clears active crises, alerts, reroutes, agent logs. Resets all 5 units to 'available' status at their base positions. Sets system mode to 'monitoring'.",
       "method": "POST",
       "url": "http://localhost:8000/api/simulation/reset",
-      "used_by": ["Manager"]
+      "used_by": ["Manager"],
+      "response_schema": {
+        "status": "string — 'reset_complete'",
+        "message": "string — confirmation message"
+      }
+    },
+    {
+      "name": "check_escalation",
+      "description": "Check if an active crisis needs escalation based on new incoming signals, time elapsed since detection, and trigger keyword analysis. Returns escalation recommendation with reasoning.",
+      "method": "GET",
+      "url": "http://localhost:8000/api/crisis/escalation-check/{crisis_id}",
+      "used_by": ["Manager", "Analyst"],
+      "path_params": {
+        "crisis_id": "string — the ID of the active crisis to check"
+      },
+      "response_schema": {
+        "escalation_needed": "boolean",
+        "reason": "string — detailed explanation",
+        "recommended_action": "string — e.g., 'dispatch_backup_unit'",
+        "trigger_matched": "string — which escalation trigger was matched",
+        "new_signal_count": "integer",
+        "signals_in_crisis_zone": "integer — signals within 3km of crisis",
+        "minutes_elapsed": "float — time since crisis detected",
+        "crisis_type": "string"
+      }
     },
     {
       "name": "firebase_write",
-      "description": "Write data to Firebase Realtime Database at a specified path",
-      "type": "firebase_admin",
+      "description": "Write data to Firebase Realtime Database. Supports three operations: 'set' (overwrite entire path), 'update' (merge fields at path), and 'push' (append with auto-generated ID). All writes are immediately reflected in the Flutter dashboard via real-time streams.",
+      "method": "firebase_admin",
       "operations": ["set", "update", "push"],
-      "paths": [
-        "/active_crises/{crisis_id}",
-        "/units/{unit_id}",
-        "/alerts/{alert_id}",
-        "/routes/active_reroutes/{reroute_id}",
-        "/agent_logs/{log_id}",
-        "/system_state",
-        "/outcome_metrics"
-      ],
-      "used_by": ["Analyst", "Dispatcher"]
+      "used_by": ["Analyst", "Commander", "Dispatcher"],
+      "parameters": {
+        "path": "string — Firebase path (e.g., '/active_crises/crisis_001', '/units/1122-ISB-04')",
+        "operation": "string — 'set' | 'update' | 'push'",
+        "data": "object — JSON data to write at the path"
+      }
     },
     {
       "name": "firebase_read",
-      "description": "Read data from Firebase Realtime Database",
-      "type": "firebase_admin",
+      "description": "Read data from Firebase Realtime Database at a specified path. Returns the JSON value stored at that path, or null if path does not exist.",
+      "method": "firebase_admin",
       "operations": ["get"],
-      "paths": ["/system_state", "/active_crises", "/units", "/outcome_metrics"],
-      "used_by": ["Analyst", "Commander", "Dispatcher"]
+      "used_by": ["Analyst", "Commander", "Dispatcher"],
+      "parameters": {
+        "path": "string — Firebase path to read from (e.g., '/units/1122-ISB-04', '/active_crises')"
+      }
     }
   ]
 }
