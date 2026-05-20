@@ -72,6 +72,74 @@ INFRA_NORMALIZED = [
     "I-8/4 transformer failure, entire sector without power"
 ]
 
+EARTHQUAKE_SOCIAL_SIGNALS = [
+    "Bahut zor ka jhatka aaya Rawalpindi mein! Deewarein gir rahi hain. Madad karo!",
+    "Earthquake in Rawalpindi! 5.8 magnitude. Buildings shaking. People running outside.",
+    "Saddar area Rawalpindi mein building collapse. Log phansey hue hain andar.",
+    "Bhookamp! Gas leak smell aa rahi hai. Bijli bhi gul ho gayi. RESCUE!",
+    "R.A. Bazaar area badly hit. Cracked roads. Multiple injured. 1122 please respond.",
+    "Rawalpindi earthquake! Ghar ke andar se bhaago! Zameen hil rahi hai!",
+    "Aftershock felt in Rawalpindi. People are too scared to go back inside.",
+    "Building girne wali hai Saddar Rawalpindi mein! Fire brigade bulao!",
+    "Holy Family Hospital mein injured patients aa rahe hain. Bhookamp ka nateeja.",
+    "Rawalpindi se Islamabad tak jhatke mehsoos huye. Cracks deewarein mein."
+]
+
+EARTHQUAKE_NORMALIZED = [
+    "Strong earthquake in Rawalpindi, walls collapsing, requesting help",
+    "5.8 magnitude earthquake in Rawalpindi, buildings shaking, evacuations underway",
+    "Building collapse in Saddar area Rawalpindi, people trapped inside",
+    "Earthquake with gas leak detected, power outage, emergency rescue needed",
+    "R.A. Bazaar Rawalpindi severely damaged, roads cracked, multiple injuries reported",
+    "Rawalpindi earthquake, evacuate buildings immediately, ground shaking",
+    "Aftershock in Rawalpindi, people afraid to re-enter buildings",
+    "Building at risk of collapse in Saddar Rawalpindi, fire brigade requested",
+    "Holy Family Hospital receiving earthquake injured patients",
+    "Earthquake tremors felt from Rawalpindi to Islamabad, wall cracks"
+]
+
+LANDSLIDE_SOCIAL_SIGNALS = [
+    "Murree road pe pahar se mitti gir gayi. Raasta bilkul band. 20+ gaariyan phansi hain!",
+    "Landslide on Murree-Islamabad road near Bari Imam. Complete blockage.",
+    "Zamin khisak gayi Murree road pe. Log phanse hue hain. NHA kab action lega?",
+    "Heavy rocks on road between Murree and Islamabad. Road impassable. Rescue needed.",
+    "Barish ke baad landslide! Murree road completely blocked. Use GT Road alternate.",
+    "Pahari ilaqe mein zamin khisak gayi. 3 gaariyan dab gayi hain. Rescue 1122!",
+    "Bari Imam ke paas landslide. Mitti aur patthar road pe. Koi guzar nahi sakta."
+]
+
+LANDSLIDE_NORMALIZED = [
+    "Mountain soil collapse on Murree road, road completely blocked, 20+ vehicles trapped",
+    "Landslide on Murree-Islamabad road near Bari Imam, complete road blockage",
+    "Ground shifted on Murree road, people trapped, NHA response requested",
+    "Heavy rocks blocking Murree-Islamabad road, road impassable, rescue needed",
+    "Post-rain landslide, Murree road completely blocked, use GT Road alternate",
+    "Landslide in hilly area, 3 vehicles buried under debris, Rescue 1122 needed",
+    "Landslide near Bari Imam, soil and rocks on road, no passage possible"
+]
+
+HOSPITAL_SOCIAL_SIGNALS = [
+    "PIMS hospital mein jagah nahi. Patients bahar dhoop mein hain. Koi madad karo.",
+    "PIMS generator fail. ICU patients at risk. Emergency situation inside hospital.",
+    "PIMS Islamabad is FULL. Redirecting patients to Poly Clinic. Please spread.",
+    "Doctor friend says PIMS cannot take more patients. System crash imminent.",
+    "PIMS emergency ward overflow. Heatstroke patients on stretchers in corridors.",
+    "PIMS ka AC band. Generator fail. Patients ki haalat kharab ho rahi hai.",
+    "WAPDA se baat karo! PIMS hospital ko bijli do. Lives at stake.",
+    "Poly Clinic bhi full hone wala hai. Islamabad hospitals crisis mein hain."
+]
+
+HOSPITAL_NORMALIZED = [
+    "PIMS hospital at full capacity, patients outside in sun, help needed",
+    "PIMS generator failure, ICU patients at risk, emergency situation",
+    "PIMS Islamabad full, patients redirecting to Poly Clinic",
+    "PIMS cannot accept more patients, system overload imminent",
+    "PIMS emergency ward overflow, heatstroke patients in corridors",
+    "PIMS AC system down, generator failed, patient conditions deteriorating",
+    "WAPDA power emergency for PIMS hospital, lives at stake",
+    "Poly Clinic near capacity, Islamabad hospital crisis developing"
+]
+
 NORMAL_SOCIAL_SIGNALS = [
     "Traffic moving smoothly on Constitution Avenue today",
     "Nice weather in Islamabad this morning",
@@ -120,9 +188,26 @@ class SignalGenerator:
                     "Lahore", "Lahore", 31.5204, 74.3587, limit
                 )
             elif self._crisis_type == "infrastructure_failure":
+                # Check if it's hospital overload scenario
+                if self._crisis_location and "PIMS" in self._crisis_location:
+                    signals = self._generate_crisis_signals(
+                        HOSPITAL_SOCIAL_SIGNALS, HOSPITAL_NORMALIZED,
+                        "PIMS Hospital", "Islamabad", 33.7104, 73.0479, limit
+                    )
+                else:
+                    signals = self._generate_crisis_signals(
+                        INFRA_SOCIAL_SIGNALS, INFRA_NORMALIZED,
+                        "I-8", "Islamabad", 33.6611, 73.0769, limit
+                    )
+            elif self._crisis_type == "earthquake":
                 signals = self._generate_crisis_signals(
-                    INFRA_SOCIAL_SIGNALS, INFRA_NORMALIZED,
-                    "I-8", "Islamabad", 33.6611, 73.0769, limit
+                    EARTHQUAKE_SOCIAL_SIGNALS, EARTHQUAKE_NORMALIZED,
+                    "Saddar, Rawalpindi", "Rawalpindi", 33.5651, 73.0451, limit
+                )
+            elif self._crisis_type == "landslide":
+                signals = self._generate_crisis_signals(
+                    LANDSLIDE_SOCIAL_SIGNALS, LANDSLIDE_NORMALIZED,
+                    "Murree Road", "Islamabad", 33.7300, 73.0900, limit
                 )
             else:
                 for _ in range(limit):
@@ -221,6 +306,16 @@ class SignalGenerator:
                     "temperature_c": 52
                 }]
             elif self._crisis_type == "infrastructure_failure":
+                if self._crisis_location and "PIMS" in self._crisis_location:
+                    return [{
+                        "alert_id": f"weather_{uuid.uuid4().hex[:6]}",
+                        "type": "EXTREME_HEAT",
+                        "severity": "EMERGENCY",
+                        "area": "Islamabad",
+                        "message": "Extreme heat 49°C. Hospital cooling systems under stress. Generator failures reported.",
+                        "issued_by": "Pakistan Meteorological Department (Mock)",
+                        "temperature_c": 49
+                    }]
                 return [{
                     "alert_id": f"weather_{uuid.uuid4().hex[:6]}",
                     "type": "CLEAR",
@@ -229,6 +324,26 @@ class SignalGenerator:
                     "message": "Clear skies. No weather alerts.",
                     "issued_by": "Pakistan Meteorological Department (Mock)",
                     "rainfall_mm_expected": 0
+                }]
+            elif self._crisis_type == "earthquake":
+                return [{
+                    "alert_id": f"weather_{uuid.uuid4().hex[:6]}",
+                    "type": "CLEAR",
+                    "severity": "NONE",
+                    "area": "Rawalpindi / Islamabad",
+                    "message": "Clear weather. No meteorological correlation with seismic event.",
+                    "issued_by": "Pakistan Meteorological Department (Mock)",
+                    "rainfall_mm_expected": 0
+                }]
+            elif self._crisis_type == "landslide":
+                return [{
+                    "alert_id": f"weather_{uuid.uuid4().hex[:6]}",
+                    "type": "HEAVY_RAINFALL",
+                    "severity": "WARNING",
+                    "area": "Murree Hills / Islamabad",
+                    "message": "Continuous heavy rainfall 95mm in Murree hills. Landslide risk VERY HIGH. Avoid hill roads.",
+                    "issued_by": "Pakistan Meteorological Department (Mock)",
+                    "rainfall_mm_expected": 95
                 }]
         return [{
             "alert_id": f"weather_{uuid.uuid4().hex[:6]}",
@@ -315,6 +430,57 @@ class SignalGenerator:
                         "anomaly_type": "HIGH_CONGESTION",
                         "from": {"lat": 33.6580, "lng": 73.0740},
                         "to": {"lat": 33.6650, "lng": 73.0800}
+                    }
+                ]
+            elif self._crisis_type == "earthquake":
+                return [
+                    {
+                        "segment_id": "seg_saddar_rwp",
+                        "road_name": "Saddar Road Rawalpindi",
+                        "congestion_score": random.randint(85, 100),
+                        "anomaly_detected": True,
+                        "anomaly_type": "SEVERE_CONGESTION",
+                        "from": {"lat": 33.5930, "lng": 73.0400},
+                        "to": {"lat": 33.5700, "lng": 73.0500}
+                    },
+                    {
+                        "segment_id": "seg_murree_rd",
+                        "road_name": "Murree Road Rawalpindi",
+                        "congestion_score": random.randint(70, 85),
+                        "anomaly_detected": True,
+                        "anomaly_type": "HIGH_CONGESTION",
+                        "from": {"lat": 33.5800, "lng": 73.0600},
+                        "to": {"lat": 33.6000, "lng": 73.0700}
+                    },
+                    {
+                        "segment_id": "seg_gt_road",
+                        "road_name": "GT Road Rawalpindi",
+                        "congestion_score": random.randint(50, 70),
+                        "anomaly_detected": True,
+                        "anomaly_type": "MODERATE_CONGESTION",
+                        "from": {"lat": 33.5500, "lng": 73.0300},
+                        "to": {"lat": 33.5800, "lng": 73.0500}
+                    }
+                ]
+            elif self._crisis_type == "landslide":
+                return [
+                    {
+                        "segment_id": "seg_murree_isl",
+                        "road_name": "Murree-Islamabad Road",
+                        "congestion_score": 100,
+                        "anomaly_detected": True,
+                        "anomaly_type": "ROAD_BLOCKED",
+                        "from": {"lat": 33.7300, "lng": 73.0900},
+                        "to": {"lat": 33.7500, "lng": 73.1200}
+                    },
+                    {
+                        "segment_id": "seg_bari_imam",
+                        "road_name": "Bari Imam Road",
+                        "congestion_score": random.randint(80, 95),
+                        "anomaly_detected": True,
+                        "anomaly_type": "HIGH_CONGESTION",
+                        "from": {"lat": 33.7350, "lng": 73.0850},
+                        "to": {"lat": 33.7400, "lng": 73.0950}
                     }
                 ]
         # Normal traffic

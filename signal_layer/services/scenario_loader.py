@@ -39,7 +39,7 @@ class ScenarioLoader:
                         })
                     except Exception as e:
                         print(f"Error loading scenario {filename}: {e}")
-        return scenarios
+        return sorted(scenarios, key=lambda x: x["scenario_name"])
 
     def load_scenario(self, scenario_name: str) -> dict | None:
         """Loads a scenario by name (filename without extension)."""

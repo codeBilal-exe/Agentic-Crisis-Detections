@@ -1,0 +1,23 @@
+{
+  "scenario_id": "earthquake_rawalpindi",
+  "scenario_name": "Earthquake — Rawalpindi 5.8 Magnitude",
+  "crisis_type": "earthquake",
+  "location": "Rawalpindi, Punjab",
+  "severity": "CRITICAL",
+  "signal_count": 14,
+  "description": "5.8 magnitude earthquake. Multiple buildings damaged. Casualties reported. Roads cracked.",
+  "social_signals_to_inject": [
+    "Bahut zor ka jhatka aaya Rawalpindi mein! Deewarein gir rahi hain. Madad karo!",
+    "Earthquake in Rawalpindi! 5.8 magnitude. Buildings shaking. People running outside.",
+    "Saddar area Rawalpindi mein building collapse. Log phansey hue hain andar.",
+    "Bhookamp! Gas leak smell aa rahi hai. Bijli bhi gul ho gayi. RESCUE!",
+    "R.A. Bazaar area badly hit. Cracked roads. Multiple injured. 1122 please respond."
+  ],
+  "weather_condition": { "type": "CLEAR", "severity": "NONE" },
+  "expected_response": {
+    "units_to_dispatch": ["1122-ISB-01", "1122-ISB-04"],
+    "agencies_to_notify": ["PDMA", "NDMA", "Army Engineering Corps", "SNGPL", "WAPDA"],
+    "relief_centers": ["Rawalpindi Cricket Stadium Relief Point", "Holy Family Hospital Triage"],
+    "estimated_resolution_minutes": 360
+  }
+}

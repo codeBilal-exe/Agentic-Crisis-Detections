@@ -1,110 +1,145 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/constants.dart';
 import '../providers/crisis_provider.dart';
-import '../models/alert_model.dart';
 
-class AlertFeedScreen extends ConsumerWidget {
+class AlertFeedScreen extends ConsumerStatefulWidget {
   const AlertFeedScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AlertFeedScreen> createState() => _AlertFeedScreenState();
+}
+
+class _AlertFeedScreenState extends ConsumerState<AlertFeedScreen> {
+  String _selectedFilter = 'ALL';
+
+  @override
+  Widget build(BuildContext context) {
     final alertsAsync = ref.watch(alertsProvider);
-    final fbService = ref.watch(firebaseServiceProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgDeep,
-      appBar: AppBar(
-        title: Row(children: [
-          Text('ACTIVE ALERTS', style: GoogleFonts.spaceGrotesk(fontSize: 18, fontWeight: FontWeight.w700)),
-          const SizedBox(width: 10),
-          alertsAsync.whenOrNull(data: (alerts) {
-            final unack = alerts.where((a) => !a.acknowledged).length;
-            return unack > 0 ? Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: AppColors.severityCritical, borderRadius: BorderRadius.circular(10)),
-              child: Text('$unack', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white))) : const SizedBox();
-          }) ?? const SizedBox(),
-        ]),
-      ),
-      body: alertsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accentBlue)),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (alerts) {
-          if (alerts.isEmpty) return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(Icons.notifications_none, size: 64, color: AppColors.textTertiary),
-            const SizedBox(height: 12),
-            Text('No Active Alerts', style: GoogleFonts.inter(fontSize: 16, color: AppColors.textSecondary)),
-          ]));
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: alerts.length,
-            itemBuilder: (ctx, i) => _buildAlertCard(alerts[i], fbService).animate().fadeIn(delay: (i * 100).ms, duration: 300.ms).slideY(begin: -0.05, end: 0),
-          );
-        },
-      ),
-    );
-  }
+      appBar: AppBar(title: const Text('ALERT FEED')),
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'].map((filter) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(filter),
+                    selected: _selectedFilter == filter,
+                    onSelected: (selected) {
+                      if (selected) setState(() => _selectedFilter = filter);
+                    },
+                    selectedColor: AppColors.accentBlue.withValues(alpha: 0.3),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          Expanded(
+            child: alertsAsync.when(
+              data: (alerts) {
+                final filtered = alerts.where((a) {
+                  if (_selectedFilter == 'ALL') return true;
+                  return a.severity.toUpperCase() == _selectedFilter;
+                }).toList();
 
-  Widget _buildAlertCard(AlertModel alert, dynamic fbService) {
-    final severityColor = _getSeverityColor(alert.severity);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: alert.acknowledged ? AppColors.bgCard.withOpacity(0.6) : AppColors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border(left: BorderSide(color: severityColor, width: 4)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Header
-        Row(children: [
-          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: severityColor, borderRadius: BorderRadius.circular(6)),
-            child: Text('${alert.severity} SEVERITY', style: GoogleFonts.jetBrainsMono(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white))),
-          const Spacer(),
-          Text(_formatTimestamp(alert.createdAt), style: GoogleFonts.jetBrainsMono(fontSize: 10, color: AppColors.textTertiary)),
-        ]),
-        const SizedBox(height: 10),
-        Text(alert.title, style: GoogleFonts.spaceGrotesk(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-        const SizedBox(height: 6),
-        Text(alert.body, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.4)),
-        const Divider(color: AppColors.borderSubtle, height: 20),
-        // Urdu text
-        Directionality(
-          textDirection: TextDirection.rtl,
-          child: Text(alert.urduBody.isNotEmpty ? '[اردو] ${alert.urduBody}' : '', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.6)),
-        ),
-        const SizedBox(height: 10),
-        // Channel pills
-        Wrap(spacing: 6, children: alert.channelsSent.map((ch) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(color: AppColors.bgElevated, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppColors.borderSubtle)),
-          child: Text(ch.replaceAll('_', '-'), style: GoogleFonts.jetBrainsMono(fontSize: 9, color: AppColors.textSecondary)),
-        )).toList()),
-        if (!alert.acknowledged) ...[
-          const SizedBox(height: 10),
-          SizedBox(width: double.infinity, child: OutlinedButton(
-            style: OutlinedButton.styleFrom(foregroundColor: AppColors.accentBlue, side: const BorderSide(color: AppColors.accentBlue)),
-            onPressed: () => fbService.acknowledgeAlert(alert.alertId),
-            child: const Text('MARK ACKNOWLEDGED'),
-          )),
+                if (filtered.isEmpty) {
+                  return const Center(child: Text('No alerts found.'));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final a = filtered[index];
+                    Color sevColor;
+                    switch (a.severity.toUpperCase()) {
+                      case 'CRITICAL': sevColor = AppColors.severityCritical; break;
+                      case 'HIGH': sevColor = AppColors.severityHigh; break;
+                      case 'MEDIUM': sevColor = AppColors.severityMedium; break;
+                      default: sevColor = AppColors.severityLow;
+                    }
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: AppColors.borderSubtle),
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(left: BorderSide(color: sevColor, width: 4)),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '⚠️ ${a.title}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(a.body, style: Theme.of(context).textTheme.bodyMedium),
+                            const SizedBox(height: 8),
+                            if (a.urduBody.isNotEmpty)
+                              Directionality(
+                                textDirection: TextDirection.rtl,
+                                child: Text(
+                                  a.urduBody,
+                                  style: GoogleFonts.notoNastaliqUrdu(
+                                    fontSize: 15,
+                                    height: 1.8,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              children: a.channelsSent.map((c) => Chip(
+                                label: Text(c, style: const TextStyle(fontSize: 10)),
+                                padding: EdgeInsets.zero,
+                                backgroundColor: AppColors.bgElevated,
+                              )).toList(),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                a.acknowledged
+                                    ? const Text('ACKNOWLEDGED ✓', style: TextStyle(color: AppColors.severityLow, fontWeight: FontWeight.bold))
+                                    : ElevatedButton(
+                                        onPressed: () {
+                                          ref.read(firebaseServiceProvider).acknowledgeAlert(a.alertId);
+                                        },
+                                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgElevated),
+                                        child: const Text('ACKNOWLEDGE'),
+                                      ),
+                                Text(
+                                  a.createdAt.substring(0, 16).replaceFirst('T', ' '),
+                                  style: Theme.of(context).textTheme.labelSmall,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, st) => Center(child: Text('Error: $e')),
+            ),
+          ),
         ],
-      ]),
+      ),
     );
-  }
-
-  Color _getSeverityColor(String severity) {
-    switch (severity) {
-      case 'CRITICAL': return AppColors.severityCritical;
-      case 'HIGH': return AppColors.severityHigh;
-      case 'MEDIUM': return AppColors.severityMedium;
-      case 'LOW': return AppColors.severityLow;
-      default: return AppColors.severityNone;
-    }
-  }
-
-  String _formatTimestamp(String ts) {
-    try { return ts.substring(11, 19); } catch (_) { return ts; }
   }
 }

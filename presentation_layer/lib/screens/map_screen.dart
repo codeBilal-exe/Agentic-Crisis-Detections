@@ -1,108 +1,114 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../core/constants.dart';
 import '../providers/crisis_provider.dart';
+import '../core/constants.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
+
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
 class _MapScreenState extends ConsumerState<MapScreen> {
-  GoogleMapController? _controller;
-  static const _initialCamera = CameraPosition(target: LatLng(33.6844, 73.0479), zoom: 11);
+  GoogleMapController? _mapController;
+  final String _mapStyle = '[{"elementType":"geometry","stylers":[{"color":"#080C14"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#4A6080"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#080C14"}]},{"featureType":"road","elementType":"geometry","stylers":[{"color":"#1A2744"}]},{"featureType":"water","elementType":"geometry","stylers":[{"color":"#0A1628"}]},{"featureType":"poi","stylers":[{"visibility":"off"}]},{"featureType":"transit","stylers":[{"visibility":"off"}]}]';
+
+  int _previousCrisisCount = 0;
+
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+    _mapController?.setMapStyle(_mapStyle);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final crisesAsync = ref.watch(activeCrisesProvider);
-    final unitsAsync = ref.watch(unitsProvider);
-    final reroutesAsync = ref.watch(activeReroutesProvider);
+    final crises = ref.watch(activeCrisesProvider);
+    final units = ref.watch(unitsProvider);
+    final reroutes = ref.watch(activeReroutesProvider);
 
-    Set<Marker> markers = {};
     Set<Circle> circles = {};
+    Set<Marker> markers = {};
     Set<Polyline> polylines = {};
 
-    // Build markers from data
-    crisesAsync.whenData((crises) {
-      for (final c in crises) {
-        markers.add(Marker(
-          markerId: MarkerId('crisis_${c.crisisId}'),
-          position: LatLng(c.affectedLat, c.affectedLng),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: InfoWindow(title: '${c.crisisTypeIcon} ${c.crisisTypeLabel}', snippet: '${c.severity} — ${c.affectedAreaName}'),
-        ));
-        circles.add(Circle(
-          circleId: CircleId('crisis_radius_${c.crisisId}'),
-          center: LatLng(c.affectedLat, c.affectedLng),
-          radius: c.affectedRadiusKm * 1000,
-          fillColor: AppColors.severityCritical.withOpacity(0.12),
-          strokeColor: AppColors.severityCritical,
-          strokeWidth: 2,
-        ));
-        // Animate camera to crisis
-        _controller?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(c.affectedLat, c.affectedLng), 13));
+    crises.whenData((data) {
+      if (data.isNotEmpty && _previousCrisisCount == 0 && _mapController != null) {
+        final firstCrisis = data.first;
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(firstCrisis.affectedLat, firstCrisis.affectedLng),
+              zoom: 13.5,
+            ),
+          ),
+        );
+      }
+      _previousCrisisCount = data.length;
+
+      for (var c in data) {
+        circles.add(
+          Circle(
+            circleId: CircleId(c.crisisId),
+            center: LatLng(c.affectedLat, c.affectedLng),
+            radius: c.affectedRadiusKm * 1000,
+            fillColor: c.severityColor.withValues(alpha: 0.2),
+            strokeColor: c.severityColor,
+            strokeWidth: 2,
+          ),
+        );
       }
     });
 
-    unitsAsync.whenData((units) {
-      for (final u in units) {
-        markers.add(Marker(
-          markerId: MarkerId('unit_${u.unitId}'),
-          position: LatLng(u.currentLat, u.currentLng),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            u.status == 'dispatched' ? BitmapDescriptor.hueOrange
-            : u.status == 'on_scene' ? BitmapDescriptor.hueBlue
-            : BitmapDescriptor.hueGreen),
-          infoWindow: InfoWindow(title: '${u.typeIcon} ${u.name}', snippet: '${u.statusLabel}${u.etaMinutes != null ? " — ETA: ${u.etaMinutes}min" : ""}'),
-        ));
+    units.whenData((data) {
+      for (var u in data) {
+        markers.add(
+          Marker(
+            markerId: MarkerId(u.unitId),
+            position: LatLng(u.currentLat, u.currentLng),
+            infoWindow: InfoWindow(title: u.name, snippet: u.statusLabel),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              u.status == 'dispatched' || u.status == 'on_scene' ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueGreen,
+            ),
+          ),
+        );
       }
     });
 
-    reroutesAsync.whenData((reroutes) {
-      for (int i = 0; i < reroutes.length; i++) {
-        final r = reroutes[i];
-        final waypoints = r['waypoints'] as List? ?? [];
-        if (waypoints.length >= 2) {
-          polylines.add(Polyline(
-            polylineId: PolylineId('reroute_$i'),
-            points: waypoints.map((w) => LatLng((w['lat'] ?? 0).toDouble(), (w['lng'] ?? 0).toDouble())).toList(),
-            color: AppColors.accentCyan, width: 4,
-            patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-          ));
+    reroutes.whenData((data) {
+      for (var r in data) {
+        final waypointsList = r['waypoints'] as List?;
+        if (waypointsList != null) {
+          List<LatLng> points = [];
+          for (var w in waypointsList) {
+            points.add(LatLng(w['lat'], w['lng']));
+          }
+          polylines.add(
+            Polyline(
+              polylineId: PolylineId(r['id'] ?? r.hashCode.toString()),
+              points: points,
+              color: Colors.orange,
+              width: 4,
+            ),
+          );
         }
       }
     });
 
     return Scaffold(
-      backgroundColor: AppColors.bgDeep,
-      appBar: AppBar(title: Text('LIVE OPERATIONS MAP', style: GoogleFonts.spaceGrotesk(fontSize: 18, fontWeight: FontWeight.w700))),
-      body: Column(children: [
-        // Legend
-        Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), color: AppColors.bgCard,
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            _legendItem('🔴', 'Crisis'), _legendItem('🟠', 'Dispatched'), _legendItem('🟢', 'Available'), _legendItem('🔵', 'Reroute'),
-          ]),
+      appBar: AppBar(title: const Text('CRISIS MAP')),
+      body: GoogleMap(
+        onMapCreated: _onMapCreated,
+        initialCameraPosition: const CameraPosition(
+          target: LatLng(33.6844, 73.0479),
+          zoom: 11,
         ),
-        // Map
-        Expanded(child: GoogleMap(
-          initialCameraPosition: _initialCamera,
-          onMapCreated: (c) => _controller = c,
-          markers: markers, circles: circles, polylines: polylines,
-          mapType: MapType.normal,
-          myLocationEnabled: false, zoomControlsEnabled: true,
-        )),
-      ]),
+        circles: circles,
+        markers: markers,
+        polylines: polylines,
+        myLocationEnabled: false,
+        zoomControlsEnabled: false,
+      ),
     );
-  }
-
-  Widget _legendItem(String emoji, String label) {
-    return Row(children: [
-      Text(emoji, style: const TextStyle(fontSize: 12)),
-      const SizedBox(width: 4),
-      Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
-    ]);
   }
 }

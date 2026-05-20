@@ -1,124 +1,140 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../core/constants.dart';
 import '../providers/crisis_provider.dart';
 
 class AgentLogsScreen extends ConsumerStatefulWidget {
   const AgentLogsScreen({super.key});
+
   @override
   ConsumerState<AgentLogsScreen> createState() => _AgentLogsScreenState();
 }
 
 class _AgentLogsScreenState extends ConsumerState<AgentLogsScreen> {
-  String _filter = 'ALL';
+  String _selectedAgent = 'ALL';
+  final ScrollController _scrollController = ScrollController();
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  Color _getAgentColor(String agentName) {
+    if (agentName.toLowerCase().contains('sentinel')) return AppColors.agentSentinel;
+    if (agentName.toLowerCase().contains('analyst')) return AppColors.agentAnalyst;
+    if (agentName.toLowerCase().contains('commander')) return AppColors.agentCommander;
+    if (agentName.toLowerCase().contains('dispatcher')) return AppColors.agentDispatcher;
+    return AppColors.textSecondary;
+  }
 
   @override
   Widget build(BuildContext context) {
     final logsAsync = ref.watch(agentLogsProvider);
-    final systemAsync = ref.watch(systemStateProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgDeep,
-      appBar: AppBar(
-        title: Row(children: [
-          Text('AGENT PIPELINE LOGS', style: GoogleFonts.spaceGrotesk(fontSize: 16, fontWeight: FontWeight.w700)),
-          const SizedBox(width: 10),
-          systemAsync.whenOrNull(data: (state) {
-            final mode = state['mode'] ?? 'monitoring';
-            if (mode == 'crisis_active') return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: AppColors.severityCritical.withOpacity(0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.severityCritical)),
-              child: Text('PIPELINE ACTIVE', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: AppColors.severityCritical, fontWeight: FontWeight.w600)));
-            return null;
-          }) ?? const SizedBox(),
-        ]),
-      ),
-      body: Column(children: [
-        // Filter tabs
-        Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: SingleChildScrollView(scrollDirection: Axis.horizontal,
-            child: Row(children: ['ALL', 'Sentinel', 'Analyst', 'Commander', 'Dispatcher'].map((agent) {
-              final isActive = _filter == agent;
-              final color = _getAgentColor(agent);
-              return GestureDetector(
-                onTap: () => setState(() => _filter = agent),
-                child: Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isActive ? color.withOpacity(0.2) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isActive ? color : AppColors.borderSubtle)),
-                  child: Text(agent, style: GoogleFonts.inter(fontSize: 12, color: isActive ? color : AppColors.textSecondary, fontWeight: isActive ? FontWeight.w600 : FontWeight.w400)),
-                ),
-              );
-            }).toList()),
+      appBar: AppBar(title: const Text('AGENT PIPELINE LOGS')),
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: ['ALL', 'SENTINEL', 'ANALYST', 'COMMANDER', 'DISPATCHER'].map((filter) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(filter),
+                    selected: _selectedAgent == filter,
+                    onSelected: (selected) {
+                      if (selected) setState(() => _selectedAgent = filter);
+                    },
+                    selectedColor: AppColors.accentBlue.withValues(alpha: 0.3),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-        ),
-        // Log entries
-        Expanded(child: logsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accentBlue)),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (logs) {
-            final filtered = _filter == 'ALL' ? logs : logs.where((l) => l['agent'] == _filter).toList();
-            if (filtered.isEmpty) return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(Icons.terminal, size: 64, color: AppColors.textTertiary),
-              const SizedBox(height: 12),
-              Text('No Agent Logs', style: GoogleFonts.inter(fontSize: 16, color: AppColors.textSecondary)),
-              const SizedBox(height: 4),
-              Text('Run the Antigravity pipeline to generate logs', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textTertiary)),
-            ]));
-            return ListView.builder(
-              padding: const EdgeInsets.all(16), itemCount: filtered.length,
-              itemBuilder: (ctx, i) => _buildLogEntry(filtered[i]).animate().fadeIn(delay: (i * 80).ms, duration: 250.ms),
-            );
-          },
-        )),
-      ]),
-    );
-  }
+          Expanded(
+            child: logsAsync.when(
+              data: (logs) {
+                final filtered = logs.where((l) {
+                  if (_selectedAgent == 'ALL') return true;
+                  return (l['agent_name'] as String? ?? '').toUpperCase().contains(_selectedAgent);
+                }).toList();
 
-  Widget _buildLogEntry(Map<String, dynamic> log) {
-    final agent = log['agent'] ?? 'Unknown';
-    final color = _getAgentColor(agent);
-    final message = log['message'] ?? '';
-    final timestamp = log['timestamp'] ?? '';
-    final dataRef = log['data_ref'] ?? '';
+                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(12),
-        border: Border(left: BorderSide(color: color, width: 3)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: color.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
-            child: Text(agent.toUpperCase(), style: GoogleFonts.jetBrainsMono(fontSize: 10, color: color, fontWeight: FontWeight.w700))),
-          const Spacer(),
-          Text(_formatTimestamp(timestamp), style: GoogleFonts.jetBrainsMono(fontSize: 10, color: AppColors.textTertiary)),
-        ]),
-        const SizedBox(height: 8),
-        Text(message, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary, height: 1.4)),
-        if (dataRef.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text('ref: $dataRef', style: GoogleFonts.jetBrainsMono(fontSize: 9, color: AppColors.textTertiary)),
+                if (filtered.isEmpty) {
+                  return const Center(child: Text('No agent logs.'));
+                }
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final log = filtered[index];
+                    final agentName = log['agent_name'] ?? 'System';
+                    final agentColor = _getAgentColor(agentName);
+                    
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.bgCard,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border(left: BorderSide(color: agentColor, width: 3)),
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: agentColor.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  agentName,
+                                  style: TextStyle(color: agentColor, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Text(
+                                log['timestamp']?.substring(11, 19) ?? '',
+                                style: Theme.of(context).textTheme.labelSmall,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(log['message'] ?? '', style: const TextStyle(fontSize: 14)),
+                          if (log['data_ref'] != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Ref: ${log['data_ref']}',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.accentCyan),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1).shimmer(duration: 600.ms, color: agentColor.withValues(alpha: 0.3));
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, st) => Center(child: Text('Error: $e')),
+            ),
+          ),
         ],
-      ]),
+      ),
     );
-  }
-
-  Color _getAgentColor(String agent) {
-    switch (agent) {
-      case 'Sentinel': return AppColors.agentSentinel;
-      case 'Analyst': return AppColors.agentAnalyst;
-      case 'Commander': return AppColors.agentCommander;
-      case 'Dispatcher': return AppColors.agentDispatcher;
-      default: return AppColors.accentBlue;
-    }
-  }
-
-  String _formatTimestamp(String ts) {
-    try { return ts.substring(11, 19); } catch (_) { return ts; }
   }
 }

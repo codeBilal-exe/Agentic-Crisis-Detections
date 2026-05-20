@@ -6,6 +6,7 @@ import '../screens/map_screen.dart';
 import '../screens/unit_tracker_screen.dart';
 import '../screens/alert_feed_screen.dart';
 import '../screens/agent_logs_screen.dart';
+import '../screens/demo_control_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -20,5 +21,6 @@ final appRouter = GoRouter(
     GoRoute(path: '/units',         builder: (c, s) => const UnitTrackerScreen()),
     GoRoute(path: '/alerts',        builder: (c, s) => const AlertFeedScreen()),
     GoRoute(path: '/agent-logs',    builder: (c, s) => const AgentLogsScreen()),
+    GoRoute(path: '/demo-control',  builder: (c, s) => const DemoControlScreen()),
   ],
 );

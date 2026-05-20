@@ -1,0 +1,22 @@
+{
+  "scenario_id": "hospital_overload",
+  "scenario_name": "Hospital Capacity Crisis — PIMS Islamabad",
+  "crisis_type": "infrastructure_failure",
+  "location": "PIMS Hospital, Islamabad",
+  "severity": "HIGH",
+  "signal_count": 8,
+  "description": "PIMS hospital overwhelmed with heatstroke patients. Generator failure. Critical patients at risk.",
+  "social_signals_to_inject": [
+    "PIMS hospital mein jagah nahi. Patients bahar dhoop mein hain. Koi madad karo.",
+    "PIMS generator fail. ICU patients at risk. Emergency situation inside hospital.",
+    "PIMS Islamabad is FULL. Redirecting patients to Poly Clinic. Please spread.",
+    "Doctor friend says PIMS cannot take more patients. System crash imminent."
+  ],
+  "weather_condition": { "type": "EXTREME_HEAT", "severity": "EMERGENCY", "temperature_c": 49 },
+  "expected_response": {
+    "units_to_dispatch": ["1122-ISB-02"],
+    "agencies_to_notify": ["MOH", "PIMS Administration", "WAPDA Emergency", "NDMA"],
+    "backup_hospitals": ["Poly Clinic Islamabad", "PMC Hospital", "Benazir Bhutto Hospital"],
+    "estimated_resolution_minutes": 120
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "scenario_id": "landslide_murree",
+  "scenario_name": "Landslide — Murree-Islamabad Road",
+  "crisis_type": "landslide",
+  "location": "Murree Road, Punjab",
+  "severity": "HIGH",
+  "signal_count": 7,
+  "description": "Heavy rainfall triggered landslide blocking Murree-Islamabad road. Vehicles trapped.",
+  "social_signals_to_inject": [
+    "Murree road pe pahar se mitti gir gayi. Raasta bilkul band. 20+ gaariyan phansi hain!",
+    "Landslide on Murree-Islamabad road near Bari Imam. Complete blockage.",
+    "Zamin khisak gayi Murree road pe. Log phanse hue hain. NHA kab action lega?",
+    "Heavy rocks on road between Murree and Islamabad. Road impassable. Rescue needed."
+  ],
+  "weather_condition": { "type": "HEAVY_RAINFALL", "severity": "WARNING", "rainfall_mm": 95 },
+  "expected_response": {
+    "units_to_dispatch": ["1122-ISB-01"],
+    "agencies_to_notify": ["NHA", "PDMA", "CDA", "Punjab Highway Patrol"],
+    "reroute": "GT Road via Rawat to Rawalpindi alternate",
+    "estimated_resolution_minutes": 180
+  }
+}
