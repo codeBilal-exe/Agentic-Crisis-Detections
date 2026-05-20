@@ -32,24 +32,24 @@ class _AlertFeedScreenState extends ConsumerState<AlertFeedScreen> {
         child: Column(
           children: [
             SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: filterOptions.map((filter) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(tr(ref, 'filter_${filter.toLowerCase()}')),
-                    selected: _selectedFilter == filter,
-                    onSelected: (selected) {
-                      if (selected) setState(() => _selectedFilter = filter);
-                    },
-                    selectedColor: AppColors.accentBlue.withValues(alpha: 0.3),
-                  ),
-                );
-              }).toList(),
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: filterOptions.map((filter) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(tr(ref, 'filter_${filter.toLowerCase()}')),
+                      selected: _selectedFilter == filter,
+                      onSelected: (selected) {
+                        if (selected) setState(() => _selectedFilter = filter);
+                      },
+                      selectedColor: AppColors.accentBlue.withValues(alpha: 0.3),
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
           Expanded(
             child: alertsAsync.when(
               data: (alerts) {

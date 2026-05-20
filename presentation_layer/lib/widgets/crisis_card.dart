@@ -13,7 +13,7 @@ class CrisisCard extends ConsumerWidget {
   const CrisisCard({super.key, required this.crisis});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     bool isHighOrCritical = crisis.severity == 'HIGH' || crisis.severity == 'CRITICAL';
 
     final confidenceLabel = tr(ref, 'confidence_label');
