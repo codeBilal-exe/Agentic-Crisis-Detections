@@ -456,7 +456,7 @@ Pipeline execution complete. Return ExecutionLog to Manager for Agent Trace arti
 - EVERY Firebase write must happen in sequence. Do not batch write without confirming each.
 - Never skip an action. If an action has no matching handler, log a WARNING and continue.
 - ALL `notify_authority` actions MUST be executed — skipping authority notifications is a CRITICAL FAILURE.
-- The `notify_authority` handler MUST write to `/notifications/` (new path) so the dashboard can display authority engagement.
+- The `notify_authority` handler MUST write to `/dispatch_tickets/[ticket_id]` so the dashboard can display authority engagement.
 - Hospital notifications MUST include bed count and backup facility.
 - NDMA notifications MUST set the `ndma_escalation_active` flag in `/system_state`.
 - Preemptive standby MUST update unit status to `"standby"` (NOT `"dispatched"`).
