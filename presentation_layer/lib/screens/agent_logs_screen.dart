@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../core/constants.dart';
 import '../providers/crisis_provider.dart';
+import '../providers/language_provider.dart';
+import '../widgets/language_toggle_button.dart';
 
 class AgentLogsScreen extends ConsumerStatefulWidget {
   const AgentLogsScreen({super.key});
@@ -34,22 +36,33 @@ class _AgentLogsScreenState extends ConsumerState<AgentLogsScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final logsAsync = ref.watch(agentLogsProvider);
+    final isUrdu = ref.watch(languageProvider) == AppLanguage.urdu;
+    final filterOptions = const ['ALL', 'SENTINEL', 'ANALYST', 'COMMANDER', 'DISPATCHER'];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('AGENT PIPELINE LOGS')),
+      appBar: AppBar(
+        title: Text(tr(ref, 'agent_logs_title')),
+        actions: const [LanguageToggleButton()],
+      ),
       body: Column(
         children: [
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
-              children: ['ALL', 'SENTINEL', 'ANALYST', 'COMMANDER', 'DISPATCHER'].map((filter) {
+              children: filterOptions.map((filter) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(filter),
+                    label: Text(tr(ref, 'filter_${filter.toLowerCase()}')),
                     selected: _selectedAgent == filter,
                     onSelected: (selected) {
                       if (selected) setState(() => _selectedAgent = filter);
@@ -71,7 +84,7 @@ class _AgentLogsScreenState extends ConsumerState<AgentLogsScreen> {
                 WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 if (filtered.isEmpty) {
-                  return const Center(child: Text('No agent logs.'));
+                  return Center(child: Text(tr(ref, 'no_agent_logs')));
                 }
 
                 return ListView.builder(
@@ -119,7 +132,7 @@ class _AgentLogsScreenState extends ConsumerState<AgentLogsScreen> {
                           if (log['data_ref'] != null) ...[
                             const SizedBox(height: 8),
                             Text(
-                              'Ref: ${log['data_ref']}',
+                              '${tr(ref, 'ref_label')}: ${log['data_ref']}',
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.accentCyan),
                             ),
                           ],

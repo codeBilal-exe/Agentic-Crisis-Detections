@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../core/constants.dart';
 import '../models/crisis_model.dart';
+import '../providers/language_provider.dart';
 import 'severity_badge.dart';
 
-class CrisisCard extends StatelessWidget {
+class CrisisCard extends ConsumerWidget {
   final CrisisModel crisis;
 
   const CrisisCard({super.key, required this.crisis});
@@ -14,6 +16,7 @@ class CrisisCard extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isHighOrCritical = crisis.severity == 'HIGH' || crisis.severity == 'CRITICAL';
 
+    final confidenceLabel = tr(ref, 'confidence_label');
     Widget cardContent = Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -38,7 +41,7 @@ class CrisisCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Text('Confidence', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              Text(confidenceLabel, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               const SizedBox(width: 8),
               Expanded(
                 child: LinearProgressIndicator(
@@ -63,7 +66,7 @@ class CrisisCard extends StatelessWidget {
             children: [
               const Icon(Icons.access_time, size: 14, color: AppColors.textTertiary),
               const SizedBox(width: 4),
-              Text(crisis.detectedAt.substring(11, 19), style: Theme.of(context).textTheme.labelSmall),
+              Text(_formatTime(crisis.detectedAt), style: Theme.of(context).textTheme.labelSmall),
               const Spacer(),
               const Icon(Icons.people, size: 14, color: AppColors.textTertiary),
               const SizedBox(width: 4),
@@ -93,5 +96,12 @@ class CrisisCard extends StatelessWidget {
       onTap: () => context.push('/crisis/${crisis.crisisId}'),
       child: card,
     );
+  }
+
+  String _formatTime(String timestamp) {
+    if (timestamp.length >= 19) {
+      return timestamp.substring(11, 19);
+    }
+    return timestamp;
   }
 }

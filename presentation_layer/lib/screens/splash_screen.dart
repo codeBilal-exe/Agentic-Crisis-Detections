@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../core/constants.dart';
+import '../providers/language_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -62,7 +63,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              AppStrings.appTagline,
+              tr(ref, 'tagline'),
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: AppColors.textSecondary,
@@ -71,7 +72,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             const SizedBox(height: 32),
             if (_hasError)
               Text(
-                'CONNECTION ERROR — CHECK SERVER',
+                tr(ref, 'connection_error'),
                 style: GoogleFonts.jetBrainsMono(
                   color: AppColors.severityCritical,
                   fontWeight: FontWeight.bold,
@@ -79,7 +80,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               ).animate().fadeIn(delay: 800.ms)
             else if (_isConnected)
               Text(
-                'SYSTEMS ONLINE',
+                tr(ref, 'systems_online'),
                 style: GoogleFonts.jetBrainsMono(
                   color: AppColors.severityLow,
                   fontWeight: FontWeight.bold,

@@ -5,6 +5,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../core/constants.dart';
 import '../providers/crisis_provider.dart';
+import '../providers/language_provider.dart';
+import '../widgets/language_toggle_button.dart';
 import '../widgets/severity_badge.dart';
 import '../widgets/stat_tile.dart';
 
@@ -23,13 +25,8 @@ class CrisisDetailScreen extends ConsumerWidget {
         
         return Scaffold(
           appBar: AppBar(
-            title: Row(
-              children: [
-                Text(crisis.crisisTypeIcon),
-                const SizedBox(width: 8),
-                Text(crisis.crisisTypeLabel, style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold)),
-              ],
-            ),
+            title: Text(tr(ref, 'crisis_detail_title')),
+            actions: const [LanguageToggleButton()],
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -91,7 +88,7 @@ class CrisisDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('AI REASONING', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(tr(ref, 'ai_reasoning_title'), style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, fontSize: 16)),
                       const SizedBox(height: 8),
                       Text(
                         crisis.reasoningSummary,
@@ -113,7 +110,7 @@ class CrisisDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('ESCALATION PREDICTION', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(tr(ref, 'escalation_prediction_title'), style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, fontSize: 16)),
                       const SizedBox(height: 8),
                       Text(
                         // We will just use reasoningSummary or a mock text since escalationPrediction might not be in the model
@@ -126,7 +123,7 @@ class CrisisDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
 
                 // Outcome Metrics
-                Text('OUTCOME METRICS', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(tr(ref, 'outcome_metrics'), style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 200,
@@ -189,9 +186,9 @@ class CrisisDetailScreen extends ConsumerWidget {
                 // Stats row
                 Row(
                   children: [
-                    Expanded(child: StatTile(label: 'Est. Affected', value: '${crisis.estimatedPeopleAffected}', icon: Icons.people, color: AppColors.accentBlue)),
+                    Expanded(child: StatTile(label: tr(ref, 'est_affected'), value: '${crisis.estimatedPeopleAffected}', icon: Icons.people, color: AppColors.accentBlue)),
                     const SizedBox(width: 8),
-                    Expanded(child: StatTile(label: 'Roads Blocked', value: '${crisis.roadsBlocked.length}', icon: Icons.traffic, color: AppColors.severityHigh)),
+                    Expanded(child: StatTile(label: tr(ref, 'roads_blocked_label'), value: '${crisis.roadsBlocked.length}', icon: Icons.traffic, color: AppColors.severityHigh)),
                   ],
                 ),
               ],

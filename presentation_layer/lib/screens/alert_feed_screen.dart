@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/constants.dart';
 import '../providers/crisis_provider.dart';
+import '../providers/language_provider.dart';
+import '../widgets/language_toggle_button.dart';
 
 class AlertFeedScreen extends ConsumerStatefulWidget {
   const AlertFeedScreen({super.key});
@@ -17,20 +19,27 @@ class _AlertFeedScreenState extends ConsumerState<AlertFeedScreen> {
   @override
   Widget build(BuildContext context) {
     final alertsAsync = ref.watch(alertsProvider);
+    final isUrdu = ref.watch(languageProvider) == AppLanguage.urdu;
+    final filterOptions = const ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('ALERT FEED')),
-      body: Column(
-        children: [
-          SingleChildScrollView(
+      appBar: AppBar(
+        title: Text(tr(ref, 'alert_feed_title')),
+        actions: const [LanguageToggleButton()],
+      ),
+      body: Directionality(
+        textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+        child: Column(
+          children: [
+            SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
-              children: ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'].map((filter) {
+              children: filterOptions.map((filter) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
-                    label: Text(filter),
+                    label: Text(tr(ref, 'filter_${filter.toLowerCase()}')),
                     selected: _selectedFilter == filter,
                     onSelected: (selected) {
                       if (selected) setState(() => _selectedFilter = filter);
@@ -50,7 +59,7 @@ class _AlertFeedScreenState extends ConsumerState<AlertFeedScreen> {
                 }).toList();
 
                 if (filtered.isEmpty) {
-                  return const Center(child: Text('No alerts found.'));
+                  return Center(child: Text(tr(ref, 'alerts_none')));
                 }
 
                 return ListView.builder(
@@ -66,6 +75,7 @@ class _AlertFeedScreenState extends ConsumerState<AlertFeedScreen> {
                       default: sevColor = AppColors.severityLow;
                     }
 
+                    final alertBody = isUrdu && a.urduBody.isNotEmpty ? a.urduBody : a.body;
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(
@@ -85,20 +95,20 @@ class _AlertFeedScreenState extends ConsumerState<AlertFeedScreen> {
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(height: 8),
-                            Text(a.body, style: Theme.of(context).textTheme.bodyMedium),
-                            const SizedBox(height: 8),
-                            if (a.urduBody.isNotEmpty)
+                            if (isUrdu)
                               Directionality(
                                 textDirection: TextDirection.rtl,
                                 child: Text(
-                                  a.urduBody,
+                                  alertBody,
                                   style: GoogleFonts.notoNastaliqUrdu(
                                     fontSize: 15,
                                     height: 1.8,
                                     color: AppColors.textSecondary,
                                   ),
                                 ),
-                              ),
+                              )
+                            else
+                              Text(alertBody, style: Theme.of(context).textTheme.bodyMedium),
                             const SizedBox(height: 12),
                             Wrap(
                               spacing: 8,
@@ -113,13 +123,13 @@ class _AlertFeedScreenState extends ConsumerState<AlertFeedScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 a.acknowledged
-                                    ? const Text('ACKNOWLEDGED ✓', style: TextStyle(color: AppColors.severityLow, fontWeight: FontWeight.bold))
+                                    ? Text(tr(ref, 'acknowledged'), style: const TextStyle(color: AppColors.severityLow, fontWeight: FontWeight.bold))
                                     : ElevatedButton(
                                         onPressed: () {
                                           ref.read(firebaseServiceProvider).acknowledgeAlert(a.alertId);
                                         },
                                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgElevated),
-                                        child: const Text('ACKNOWLEDGE'),
+                                        child: Text(tr(ref, 'acknowledge')),
                                       ),
                                 Text(
                                   a.createdAt.substring(0, 16).replaceFirst('T', ' '),
@@ -135,7 +145,7 @@ class _AlertFeedScreenState extends ConsumerState<AlertFeedScreen> {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Error: $e')),
+              error: (e, st) => Center(child: Text(tr(ref, 'loading_error'))),
             ),
           ),
         ],

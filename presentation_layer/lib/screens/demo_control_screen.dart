@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/constants.dart';
+import '../providers/language_provider.dart';
 import '../services/api_service.dart';
+import '../widgets/language_toggle_button.dart';
 import '../widgets/severity_badge.dart';
 
 class DemoControlScreen extends ConsumerStatefulWidget {
@@ -20,7 +22,8 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DEMO CONTROL PANEL'),
+        title: Text(tr(ref, 'demo_control_title')),
+        actions: const [LanguageToggleButton()],
         backgroundColor: AppColors.bgElevated,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -33,9 +36,9 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Text('CIRO SIMULATION ENGINE', style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(tr(ref, 'scenario_engine'), style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                const Text('Select a crisis scenario to inject signals', style: TextStyle(color: AppColors.textSecondary)),
+                Text(tr(ref, 'scenario_instruction'), style: const TextStyle(color: AppColors.textSecondary)),
               ],
             ),
           ),
@@ -47,7 +50,7 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError || (snapshot.data != null && snapshot.data!['error'] == true)) {
-                  return const Center(child: Text('Failed to load scenarios'));
+                  return Center(child: Text(tr(ref, 'failed_to_load_scenarios')));
                 }
 
                 final scenarios = (snapshot.data!['scenarios'] as List?) ?? [];
@@ -104,15 +107,15 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
                                     context: context,
                                     builder: (c) => AlertDialog(
                                         backgroundColor: AppColors.bgElevated,
-                                        title: const Text('Scenario Triggered'),
-                                        content: const Text('Injected signals. Now run the Antigravity pipeline.'),
+                                        title: Text(tr(ref, 'scenario_triggered_title')),
+                                        content: Text(tr(ref, 'scenario_triggered_message')),
                                         actions: [
                                           TextButton(
                                             onPressed: () {
                                               Navigator.pop(c);
                                               context.go('/dashboard');
                                             },
-                                            child: const Text('OK'),
+                                            child: Text(tr(ref, 'scenario_triggered_ok')),
                                           ),
                                         ],
                                       ),
@@ -121,7 +124,7 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentBlue),
                                 child: _isLoading 
                                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                    : const Text('TRIGGER'),
+                                    : Text(tr(ref, 'trigger')),
                               ),
                             ),
                           ],
@@ -138,7 +141,7 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                const Text('PIPELINE STATUS', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                Text(tr(ref, 'pipeline_status'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -147,10 +150,10 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
                     onPressed: () async {
                       await ApiService.post(ApiEndpoints.resetSimulation);
                       if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('System Reset Complete')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr(ref, 'systems_reset_complete'))));
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),
-                    child: const Text('RESET ALL SYSTEMS'),
+                    child: Text(tr(ref, 'reset_all_systems')),
                   ),
                 ),
               ],

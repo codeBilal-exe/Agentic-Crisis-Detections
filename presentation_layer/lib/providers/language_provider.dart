@@ -1,8 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/l10n/app_en.dart';
 import '../core/l10n/app_ur.dart';
 
 enum AppLanguage { english, urdu }
+
+extension AppLanguageHelpers on AppLanguage {
+  Locale get locale => this == AppLanguage.urdu ? const Locale('ur') : const Locale('en');
+  TextDirection get direction => this == AppLanguage.urdu ? TextDirection.rtl : TextDirection.ltr;
+}
 
 class LanguageNotifier extends StateNotifier<AppLanguage> {
   LanguageNotifier() : super(AppLanguage.english);
