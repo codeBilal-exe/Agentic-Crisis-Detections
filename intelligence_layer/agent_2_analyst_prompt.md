@@ -83,6 +83,10 @@ Calculate: `crisis_signals_count × average_credibility_score`
 
 **Base: 0.50**
 
+Treat official confirmation as present if either:
+- `corroboration.official_confirmation_received == true` from Sentinel output, or
+- any normalized signal has `source` in (`Rescue_1122_Official`, `CDA_Traffic`, `PDMA_Official`) or `is_official == true`.
+
 Positive modifiers:
 - `+ crisis_signals_count × 0.04` (max +0.20)
 - `+ weather corroboration HIGH: +0.15`
@@ -92,6 +96,7 @@ Positive modifiers:
 - `+ source diversity (2+ platforms): +0.06`
 - `+ roman_urdu signals present (local witnesses): +0.04`
 - `+ high credibility signals (score > 0.7) count × 0.02` (max +0.06)
+- `+ official confirmation from Rescue 1122/CDA/PDMA: +0.20`
 
 Negative modifiers:
 - `− only 1 signal total: -0.25`
@@ -370,10 +375,11 @@ This is the **MOST IMPORTANT** field for hackathon judges. Write as if briefing 
 6. Hospital situation and whether capacity is a concern
 7. Why the confidence score was set where it is
 8. What the likely next escalation is, with specific time windows
+9. If official confirmation is present, include this exact sentence in reasoning: "Official Rescue 1122 confirmation received — confidence elevated to near-maximum"
 
 **EXAMPLE OF EXCELLENT reasoning_summary:**
 
-"Five distinct social media signals from G-10 Islamabad were received within a 22-minute window. Three were written in Roman Urdu — 'pani bhar gaya' (flooding reported), 'gaariyan phans gayi' (vehicles stranded), 'markaz road pe paani hi paani' (road entirely submerged) — indicating direct local witnesses, not secondary reports. Two English-language posts corroborated with specific road references. PMD alert confirms 85mm rainfall — threshold for flash flooding in Islamabad's drainage-challenged sectors. Traffic data shows G-10 Markaz Road at 96/100 congestion, confirming physical blockage. Casualty estimate: 0 fatalities likely (no drowning keywords), 3-6 critical injuries (vehicle entrapment risk), 12 minor injuries, approximately 8 people trapped. PIMS hospital at 4.2km is recommended primary receiving facility — no overcapacity signals detected. Confidence set at 0.91: high due to 3-source corroboration but not maximum as no Rescue 1122 arrival confirmation received. If unresolved, flooding predicted to spread 2-3km within 60 minutes, potentially cutting off I-9 sector access routes."
+"Five distinct social media signals from G-10 Islamabad were received within a 22-minute window. Three were written in Roman Urdu — 'pani bhar gaya' (flooding reported), 'gaariyan phans gayi' (vehicles stranded), 'markaz road pe paani hi paani' (road entirely submerged) — indicating direct local witnesses, not secondary reports. Two English-language posts corroborated with specific road references. PMD alert confirms 85mm rainfall — threshold for flash flooding in Islamabad's drainage-challenged sectors. Traffic data shows G-10 Markaz Road at 96/100 congestion, confirming physical blockage. Casualty estimate: 0 fatalities likely (no drowning keywords), 3-6 critical injuries (vehicle entrapment risk), 12 minor injuries, approximately 8 people trapped. PIMS hospital at 4.2km is recommended primary receiving facility — no overcapacity signals detected. Official Rescue 1122 confirmation received — confidence elevated to near-maximum. Confidence set at 0.96 due to 3-source corroboration plus official confirmation. If unresolved, flooding predicted to spread 2-3km within 60 minutes, potentially cutting off I-9 sector access routes."
 
 **BAD reasoning_summary (do NOT write like this):**
 "Signals detected. Crisis found. Severity high. Deploying units."

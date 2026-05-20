@@ -77,6 +77,50 @@ NORMAL_SOCIAL_SIGNALS = [
     "Margalla road clear and scenic today",
 ]
 
+CITIZEN_REPORTER_SIGNALS = [
+    {
+        "type": "video_report",
+        "text": "Live video: G-10 underpass completely submerged. Cars abandoned. Water level rising fast.",
+        "engagement_score": 450,
+        "platform": "Twitter/X",
+        "has_media": True,
+    },
+    {
+        "type": "eye_witness",
+        "text": "Main hun G-10 mein abhi. Knee deep pani hai road pe. Bijli bhi gul ho gayi.",
+        "engagement_score": 230,
+        "platform": "WhatsApp",
+        "has_media": False,
+    },
+]
+
+RESCUE_TEAM_SIGNALS = [
+    {
+        "source": "Rescue_1122_Official",
+        "text": "Rescue 1122 Islamabad: Teams deployed at G-10. 3 vehicles recovered. Operations ongoing. Citizens advised to avoid area.",
+        "credibility": 1.0,
+        "is_official": True,
+    }
+]
+
+TRAFFIC_AUTHORITY_SIGNALS = [
+    {
+        "source": "CDA_Traffic",
+        "text": "CDA Traffic Advisory: G-10 Markaz Road closed due to flooding. Use Srinagar Highway as alternate.",
+        "credibility": 1.0,
+        "is_official": True,
+    }
+]
+
+PDMA_OFFICIAL_SIGNALS = [
+    {
+        "source": "PDMA_Official",
+        "text": "PDMA advisory: Urban flood risk elevated in G-10 Islamabad. Coordinate with Rescue 1122 and avoid low-lying roads.",
+        "credibility": 1.0,
+        "is_official": True,
+    }
+]
+
 
 class SignalGenerator:
     def __init__(self):
@@ -103,6 +147,102 @@ class SignalGenerator:
     def now_iso(self):
         return datetime.now(timezone.utc).isoformat()
 
+    def _build_citizen_reporter_signal(
+        self,
+        template: dict,
+        area: str,
+        city: str,
+        lat: float,
+        lng: float,
+    ) -> dict:
+        raw_text = template["text"]
+        normalized_text = raw_text
+        if template.get("type") == "eye_witness":
+            normalized_text = (
+                "I am currently in G-10. The road has knee-deep water and electricity is out."
+            )
+
+        return {
+            "signal_id": self.new_signal_id(),
+            "source": "citizen_reporter",
+            "timestamp": self.now_iso(),
+            "raw_text": raw_text,
+            "normalized_text": normalized_text,
+            "signal_type": template.get("type", "citizen_report"),
+            "location": {
+                "area": area,
+                "city": city,
+                "lat": lat + random.uniform(-0.002, 0.002),
+                "lng": lng + random.uniform(-0.002, 0.002),
+            },
+            "metadata": {
+                "platform": template.get("platform", "Twitter/X"),
+                "engagement_score": int(template.get("engagement_score", 100)),
+                "language_detected": (
+                    "roman_urdu" if template.get("type") == "eye_witness" else "english"
+                ),
+                "has_media": bool(template.get("has_media", False)),
+                "citizen_reporter": True,
+            },
+        }
+
+    def _build_official_signal(
+        self,
+        template: dict,
+        area: str,
+        city: str,
+        lat: float,
+        lng: float,
+    ) -> dict:
+        return {
+            "signal_id": self.new_signal_id(),
+            "source": template.get("source", "Official_Authority"),
+            "timestamp": self.now_iso(),
+            "raw_text": template["text"],
+            "normalized_text": template["text"],
+            "credibility": float(template.get("credibility", 1.0)),
+            "is_official": bool(template.get("is_official", True)),
+            "location": {
+                "area": area,
+                "city": city,
+                "lat": lat + random.uniform(-0.001, 0.001),
+                "lng": lng + random.uniform(-0.001, 0.001),
+            },
+            "metadata": {
+                "platform": "Official Bulletin",
+                "engagement_score": random.randint(300, 850),
+                "language_detected": "english",
+                "is_official": bool(template.get("is_official", True)),
+                "authority_source": template.get("source", "Official_Authority"),
+            },
+        }
+
+    def _inject_urban_flood_realism_signals(
+        self,
+        signals: list,
+        area: str,
+        city: str,
+        lat: float,
+        lng: float,
+        limit: int,
+    ) -> list:
+        realism_signals = []
+
+        for template in RESCUE_TEAM_SIGNALS:
+            realism_signals.append(self._build_official_signal(template, area, city, lat, lng))
+        for template in TRAFFIC_AUTHORITY_SIGNALS:
+            realism_signals.append(self._build_official_signal(template, area, city, lat, lng))
+        for template in PDMA_OFFICIAL_SIGNALS:
+            realism_signals.append(self._build_official_signal(template, area, city, lat, lng))
+        for template in CITIZEN_REPORTER_SIGNALS:
+            realism_signals.append(
+                self._build_citizen_reporter_signal(template, area, city, lat, lng)
+            )
+
+        # Prioritize official confirmations first, then blend with social chatter.
+        combined = realism_signals + signals
+        return combined[:limit]
+
     def get_social_signals(self, limit: int = 10) -> list:
         if not self._crisis_mode:
             return [self._generate_normal_signal() for _ in range(limit)]
@@ -111,6 +251,14 @@ class SignalGenerator:
             signals = self._generate_crisis_signals(
                 FLOOD_SOCIAL_SIGNALS,
                 FLOOD_NORMALIZED,
+                area="G-10",
+                city="Islamabad",
+                lat=33.6844,
+                lng=73.0479,
+                limit=limit,
+            )
+            signals = self._inject_urban_flood_realism_signals(
+                signals=signals,
                 area="G-10",
                 city="Islamabad",
                 lat=33.6844,

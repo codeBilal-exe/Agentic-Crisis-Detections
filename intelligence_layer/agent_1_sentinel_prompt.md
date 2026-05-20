@@ -104,6 +104,11 @@ Score each signal for crisis relevance using a **SIGNAL CREDIBILITY SCORE** (0.0
 
 **Base Score: 0.40**
 
+**Official Source Hard Override (MANDATORY):**
+- If signal source is `Rescue_1122_Official`, `CDA_Traffic`, or `PDMA_Official` OR signal has `is_official: true`, set `credibility_score = 1.0` immediately.
+- For these official confirmations, ignore normal penalties (vagueness, duplicates, low engagement).
+- Set `official_confirmation_received: true` and record source under `official_sources[]`.
+
 **Engagement Modifiers:**
 - engagement_score > 100: +0.20
 - engagement_score 50-100: +0.10
@@ -273,7 +278,9 @@ Produce this EXACT JSON structure:
     "weather_corroborates": true,
     "traffic_corroborates": true,
     "corroboration_level": "HIGH",
-    "corroboration_explanation": "PMD heavy rainfall warning for Islamabad confirms flooding reports. G-10 Markaz Road showing 96% congestion confirms physical road blockage."
+    "corroboration_explanation": "PMD heavy rainfall warning for Islamabad confirms flooding reports. G-10 Markaz Road showing 96% congestion confirms physical road blockage.",
+    "official_confirmation_received": true,
+    "official_sources": ["Rescue_1122_Official", "CDA_Traffic"]
   },
   "secondary_risks": ["power outages", "road accidents"],
   "secondary_risk_timeline": "60-90 minutes if crisis untreated",
