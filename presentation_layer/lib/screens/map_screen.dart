@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../providers/crisis_provider.dart';
-import '../core/constants.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -19,7 +18,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    _mapController?.setMapStyle(_mapStyle);
   }
 
   @override
@@ -103,6 +101,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           target: LatLng(33.6844, 73.0479),
           zoom: 11,
         ),
+        style: _mapStyle,
         circles: circles,
         markers: markers,
         polylines: polylines,

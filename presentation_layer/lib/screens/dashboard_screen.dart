@@ -10,7 +10,6 @@ import '../providers/language_provider.dart';
 import '../services/api_service.dart';
 import '../widgets/crisis_card.dart';
 import '../widgets/unit_mini_card.dart';
-import '../widgets/severity_badge.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -253,6 +252,7 @@ class DashboardScreen extends ConsumerWidget {
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Activating scenario...')));
                                 await ApiService.post('${ApiEndpoints.triggerScenario}/${s['scenario_id']}');
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Scenario Activated — Run Pipeline')));
                               },
                               style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentBlue),
@@ -269,6 +269,7 @@ class DashboardScreen extends ConsumerWidget {
                       onPressed: () async {
                         Navigator.pop(context);
                         await ApiService.post(ApiEndpoints.resetSimulation);
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('System Reset Complete')));
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),

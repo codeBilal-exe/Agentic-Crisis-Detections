@@ -97,12 +97,12 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
                                 onPressed: _isLoading ? null : () async {
                                   setState(() => _isLoading = true);
                                   await ApiService.post('${ApiEndpoints.triggerScenario}/${s['scenario_id']}');
+                                  if (!context.mounted) return;
                                   setState(() => _isLoading = false);
                                   
-                                  if (mounted) {
-                                    showDialog(
-                                      context: context,
-                                      builder: (c) => AlertDialog(
+                                  showDialog(
+                                    context: context,
+                                    builder: (c) => AlertDialog(
                                         backgroundColor: AppColors.bgElevated,
                                         title: const Text('Scenario Triggered'),
                                         content: const Text('Injected signals. Now run the Antigravity pipeline.'),
@@ -117,7 +117,6 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
                                         ],
                                       ),
                                     );
-                                  }
                                 },
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentBlue),
                                 child: _isLoading 
@@ -147,9 +146,8 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       await ApiService.post(ApiEndpoints.resetSimulation);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('System Reset Complete')));
-                      }
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('System Reset Complete')));
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.severityCritical),
                     child: const Text('RESET ALL SYSTEMS'),
