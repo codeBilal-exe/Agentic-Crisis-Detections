@@ -16,6 +16,13 @@ except Exception as e:
     print(f"[Signals] NewsApiService unavailable: {e}")
     news_api = None
 
+try:
+    from services.traffic_service import TrafficApiService
+    traffic_api = TrafficApiService()
+except Exception as e:
+    print(f"[Signals] TrafficApiService unavailable: {e}")
+    traffic_api = None
+
 router = APIRouter()
 
 
@@ -79,21 +86,39 @@ def get_weather_alerts():
 
 
 @router.get("/traffic")
-def get_traffic_data():
+async def get_traffic_data():
     """
     Returns traffic congestion data. Congestion score 0-100.
     Anomaly threshold: score > 70.
     """
     generator = get_shared_generator()
+    segments = generator.get_traffic_segments()
+    source = "google_maps_traffic_mock"
+    real_data_available = False
+
+    if traffic_api:
+        try:
+            real_segments = await traffic_api.get_islamabad_traffic_async()
+            if real_segments:
+                segments = real_segments
+                source = "tomtom_real+mock_fallback"
+                real_data_available = any(
+                    bool((segment.get("metadata") or {}).get("real_data"))
+                    for segment in real_segments
+                )
+        except Exception as e:
+            print(f"[Signals] TrafficAPI error: {e}")
+
     return {
-        "source": "google_maps_traffic_mock",
+        "source": source,
         "timestamp": generator.now_iso(),
-        "segments": generator.get_traffic_segments()
+        "segments": segments,
+        "real_data_available": real_data_available,
     }
 
 
 @router.get("/all")
-def get_all_signals():
+async def get_all_signals():
     """
     Aggregated endpoint — returns social + weather + traffic in one call.
     Merges real API data (weather, news) with mock data.
@@ -123,14 +148,29 @@ def get_all_signals():
     # Combine weather: real takes priority, mock adds crisis-specific data
     combined_weather = real_weather + mock_weather if real_weather else mock_weather
 
+    traffic_segments = generator.get_traffic_segments()
+    traffic_real_available = False
+    if traffic_api:
+        try:
+            real_traffic = await traffic_api.get_islamabad_traffic_async()
+            if real_traffic:
+                traffic_segments = real_traffic
+                traffic_real_available = any(
+                    bool((segment.get("metadata") or {}).get("real_data"))
+                    for segment in real_traffic
+                )
+        except Exception as e:
+            print(f"[Signals] TrafficAPI error in /all: {e}")
+
     return {
         "bundle_id": generator.new_bundle_id(),
         "timestamp": generator.now_iso(),
         "social": social,
         "weather": combined_weather,
-        "traffic": generator.get_traffic_segments(),
+        "traffic": traffic_segments,
         "real_apis": {
             "weather": len(real_weather) > 0,
             "news": news_api is not None,
+            "traffic": traffic_real_available,
         }
     }
