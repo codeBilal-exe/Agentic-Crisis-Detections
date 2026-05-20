@@ -33,3 +33,11 @@ final outcomeMetricsProvider = StreamProvider<Map<String, dynamic>>((ref) {
 final activeReroutesProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
   return ref.watch(firebaseServiceProvider).watchActiveReroutes();
 });
+
+final dispatchTicketsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(firebaseServiceProvider).watchDispatchTickets();
+});
+
+final monitoringCyclesProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(firebaseServiceProvider).watchMonitoringCycles();
+});

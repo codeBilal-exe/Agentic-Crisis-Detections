@@ -25,6 +25,7 @@ class DashboardScreen extends ConsumerWidget {
     final isUrdu = languageProviderState == AppLanguage.urdu;
     final systemState = ref.watch(systemStateProvider);
     final units = ref.watch(unitsProvider);
+    final dispatchTickets = ref.watch(dispatchTicketsProvider);
     final agentLogs = ref.watch(agentLogsProvider);
 
     return Scaffold(
@@ -106,6 +107,24 @@ class DashboardScreen extends ConsumerWidget {
                       );
                     },
                     loading: () => _buildShimmerBox(100),
+                    error: (e, st) => _buildStatusMessage(tr(ref, 'loading_error')),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('AUTHORITY COORDINATION', style: Theme.of(context).textTheme.titleLarge),
+                      TextButton.icon(
+                        onPressed: () => context.push('/dispatch-tickets'),
+                        icon: const Icon(Icons.confirmation_number_outlined, size: 18),
+                        label: const Text('VIEW TICKETS'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  dispatchTickets.when(
+                    data: (tickets) => _buildAuthorityCoordinationPanel(tickets),
+                    loading: () => _buildShimmerBox(72),
                     error: (e, st) => _buildStatusMessage(tr(ref, 'loading_error')),
                   ),
                   const SizedBox(height: 24),
@@ -287,7 +306,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Future<void> _triggerSimulation(BuildContext context) async {
-    final response = await ApiService.post(ApiEndpoints.triggerScenario);
+    final response = await ApiService.post('${ApiEndpoints.triggerScenario}/urban_flood_g10');
     if (!context.mounted) return;
 
     final message = response['error'] == true
@@ -297,5 +316,69 @@ class DashboardScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  Widget _buildAuthorityCoordinationPanel(List<Map<String, dynamic>> tickets) {
+    final grouped = <String, String>{};
+    for (final ticket in tickets) {
+      final authority = (ticket['authority'] ?? ticket['authority_type'] ?? '').toString().toUpperCase();
+      if (authority.isEmpty) continue;
+      final status = (ticket['status'] ?? 'ISSUED').toString().toUpperCase();
+      grouped[authority] = _deriveAuthorityState(status);
+    }
+
+    const defaults = <String, String>{
+      'POLICE': 'NOTIFIED',
+      'FIRE': 'STANDBY',
+      'PDMA': 'ACTIVE',
+    };
+    defaults.forEach((key, value) => grouped.putIfAbsent(key, () => value));
+
+    final cards = grouped.entries.take(3).toList();
+    return Row(
+      children: cards.map((entry) {
+        final state = entry.value;
+        final color = _coordinationColor(state);
+        return Expanded(
+          child: Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.bgCard,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.7)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(entry.key, style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(
+                  state,
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String _deriveAuthorityState(String status) {
+    if (status == 'ON_SCENE' || status == 'UNITS_DISPATCHED') return 'ACTIVE';
+    if (status == 'ACKNOWLEDGED') return 'STANDBY';
+    return 'NOTIFIED';
+  }
+
+  Color _coordinationColor(String state) {
+    switch (state) {
+      case 'ACTIVE':
+        return AppColors.statusAvailable;
+      case 'STANDBY':
+        return AppColors.statusDispatched;
+      default:
+        return AppColors.accentBlue;
+    }
   }
 }

@@ -7,6 +7,13 @@ import '../core/constants.dart';
 class FirebaseService {
   final FirebaseDatabase _db = FirebaseDatabase.instance;
 
+  Map<String, dynamic> _asStringMap(dynamic raw) {
+    if (raw is Map) {
+      return Map<String, dynamic>.from(raw);
+    }
+    return <String, dynamic>{};
+  }
+
   // ── CRISIS STREAMS ────────────────────────────────────────────
   Stream<List<CrisisModel>> watchActiveCrises() {
     return _db
@@ -64,9 +71,44 @@ class FirebaseService {
       final data = event.snapshot.value as Map<dynamic, dynamic>?;
       if (data == null) return [];
       return data.values
-          .map((v) => Map<String, dynamic>.from(v as Map))
+          .map((v) {
+            final item = _asStringMap(v);
+            final normalizedAgentName = (item['agent_name'] ?? item['agent'] ?? 'System').toString();
+            item['agent_name'] = normalizedAgentName;
+            return item;
+          })
           .toList()
           ..sort((a, b) => (b['timestamp'] ?? '').compareTo(a['timestamp'] ?? ''));
+    });
+  }
+
+  // Dispatch tickets stream
+  Stream<List<Map<String, dynamic>>> watchDispatchTickets() {
+    return _db.ref(FirebasePaths.dispatchTickets).onValue.map((event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (data == null) return [];
+      final tickets = data.values.map((v) => _asStringMap(v)).toList();
+      tickets.sort((a, b) {
+        final aTime = (a['issued_at'] ?? a['sent_at'] ?? '').toString();
+        final bTime = (b['issued_at'] ?? b['sent_at'] ?? '').toString();
+        return bTime.compareTo(aTime);
+      });
+      return tickets;
+    });
+  }
+
+  // Monitoring cycles stream
+  Stream<List<Map<String, dynamic>>> watchMonitoringCycles() {
+    return _db.ref(FirebasePaths.monitoringCycles).onValue.map((event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (data == null) return [];
+      final cycles = data.values.map((v) => _asStringMap(v)).toList();
+      cycles.sort((a, b) {
+        final aNo = a['cycle_number'] is num ? (a['cycle_number'] as num).toInt() : 0;
+        final bNo = b['cycle_number'] is num ? (b['cycle_number'] as num).toInt() : 0;
+        return bNo.compareTo(aNo);
+      });
+      return cycles;
     });
   }
 

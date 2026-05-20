@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:async';
 import '../core/constants.dart';
 import '../providers/crisis_provider.dart';
 import '../providers/language_provider.dart';
@@ -16,6 +17,8 @@ class AgentLogsScreen extends ConsumerStatefulWidget {
 class _AgentLogsScreenState extends ConsumerState<AgentLogsScreen> {
   String _selectedAgent = 'ALL';
   final ScrollController _scrollController = ScrollController();
+  late Timer _ticker;
+  DateTime _now = DateTime.now();
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -36,7 +39,17 @@ class _AgentLogsScreenState extends ConsumerState<AgentLogsScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
   void dispose() {
+    _ticker.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -44,7 +57,7 @@ class _AgentLogsScreenState extends ConsumerState<AgentLogsScreen> {
   @override
   Widget build(BuildContext context) {
     final logsAsync = ref.watch(agentLogsProvider);
-    final isUrdu = ref.watch(languageProvider) == AppLanguage.urdu;
+    final cyclesAsync = ref.watch(monitoringCyclesProvider);
     final filterOptions = const ['ALL', 'SENTINEL', 'ANALYST', 'COMMANDER', 'DISPATCHER'];
 
     return Scaffold(
@@ -54,6 +67,7 @@ class _AgentLogsScreenState extends ConsumerState<AgentLogsScreen> {
       ),
       body: Column(
         children: [
+          _buildMonitoringCycleIndicator(cyclesAsync),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -148,6 +162,76 @@ class _AgentLogsScreenState extends ConsumerState<AgentLogsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMonitoringCycleIndicator(AsyncValue<List<Map<String, dynamic>>> cyclesAsync) {
+    return cyclesAsync.when(
+      data: (cycles) {
+        if (cycles.isEmpty) return const SizedBox.shrink();
+        final latest = cycles.first;
+        final cycleNo = latest['cycle_number']?.toString() ?? '1';
+        final completedAt = DateTime.tryParse((latest['completed_at'] ?? '').toString());
+        final nextAt = DateTime.tryParse((latest['next_cycle_scheduled_at'] ?? '').toString());
+        final duration = (completedAt != null && nextAt != null)
+            ? nextAt.difference(completedAt).inSeconds
+            : 90;
+        final elapsed = (completedAt != null) ? _now.difference(completedAt).inSeconds : 0;
+        final safeDuration = duration <= 0 ? 90 : duration;
+        final progress = (elapsed / safeDuration).clamp(0.0, 1.0);
+        final running = nextAt != null && _now.isBefore(nextAt);
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.borderSubtle),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: AppColors.statusAvailable,
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                      .animate(onPlay: (c) {
+                    if (running) c.repeat(reverse: true);
+                  }).fade(begin: running ? 0.35 : 1, end: 1),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Cycle $cycleNo of ongoing monitoring',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                value: progress,
+                minHeight: 7,
+                color: AppColors.accentCyan,
+                backgroundColor: AppColors.bgElevated,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                running
+                    ? 'Next Sentinel scan in ${(safeDuration - elapsed).clamp(0, safeDuration)}s'
+                    : 'Sentinel scan window reached',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (e, st) => const SizedBox.shrink(),
     );
   }
 }

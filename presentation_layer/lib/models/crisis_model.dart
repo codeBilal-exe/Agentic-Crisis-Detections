@@ -16,6 +16,9 @@ class CrisisModel {
   final int estimatedPeopleAffected;
   final String status;
   final String reasoningSummary;
+  final String tPlus15;
+  final String tPlus30;
+  final String tPlus60;
   final String? planId;
 
   CrisisModel({
@@ -33,10 +36,18 @@ class CrisisModel {
     required this.estimatedPeopleAffected,
     required this.status,
     required this.reasoningSummary,
+    required this.tPlus15,
+    required this.tPlus30,
+    required this.tPlus60,
     this.planId,
   });
 
   factory CrisisModel.fromMap(Map<dynamic, dynamic> map) {
+    final affectedArea = map['affected_area'] is Map ? Map<dynamic, dynamic>.from(map['affected_area'] as Map) : const <dynamic, dynamic>{};
+    final impact = map['impact_assessment'] is Map ? Map<dynamic, dynamic>.from(map['impact_assessment'] as Map) : const <dynamic, dynamic>{};
+    final prediction = map['prediction_timeline'] is Map ? Map<dynamic, dynamic>.from(map['prediction_timeline'] as Map) : const <dynamic, dynamic>{};
+    final roads = map['roads_blocked'] ?? impact['roads_blocked'] ?? const [];
+
     return CrisisModel(
       crisisId: map['crisis_id'] ?? '',
       crisisType: map['crisis_type'] ?? 'unknown',
@@ -44,16 +55,25 @@ class CrisisModel {
       confidence: (map['confidence'] ?? 0.0).toDouble(),
       confidenceLabel: map['confidence_label'] ?? 'LOW',
       detectedAt: map['detected_at'] ?? '',
-      affectedAreaName: map['affected_area_name'] ?? '',
-      affectedLat: (map['affected_lat'] ?? 0.0).toDouble(),
-      affectedLng: (map['affected_lng'] ?? 0.0).toDouble(),
-      affectedRadiusKm: (map['affected_radius_km'] ?? 1.0).toDouble(),
-      roadsBlocked: List<String>.from(map['roads_blocked'] ?? []),
-      estimatedPeopleAffected: map['estimated_people_affected'] ?? 0,
+      affectedAreaName: map['affected_area_name'] ?? affectedArea['name'] ?? '',
+      affectedLat: (map['affected_lat'] ?? affectedArea['lat'] ?? 0.0).toDouble(),
+      affectedLng: (map['affected_lng'] ?? affectedArea['lng'] ?? 0.0).toDouble(),
+      affectedRadiusKm: (map['affected_radius_km'] ?? affectedArea['radius_km'] ?? 1.0).toDouble(),
+      roadsBlocked: List<String>.from(roads),
+      estimatedPeopleAffected: _toInt(map['estimated_people_affected'] ?? impact['estimated_people_affected']),
       status: map['status'] ?? 'active',
       reasoningSummary: map['reasoning_summary'] ?? '',
+      tPlus15: prediction['t_plus_15']?.toString() ?? '',
+      tPlus30: prediction['t_plus_30']?.toString() ?? '',
+      tPlus60: prediction['t_plus_60']?.toString() ?? '',
       planId: map['plan_id'],
     );
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   Color get severityColor {

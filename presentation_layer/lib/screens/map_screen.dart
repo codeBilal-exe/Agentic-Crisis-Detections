@@ -21,7 +21,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    controller.setMapStyle(_mapStyle);
   }
 
   @override
@@ -129,6 +128,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         children: [
           GoogleMap(
             onMapCreated: _onMapCreated,
+            style: _mapStyle,
             initialCameraPosition: const CameraPosition(
               target: LatLng(33.6844, 73.0479),
               zoom: 11,
@@ -146,7 +146,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               right: 16,
               child: Card(
                 elevation: 2,
-                color: AppColors.bgCard.withOpacity(0.92),
+                color: AppColors.bgCard.withValues(alpha: 0.92),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   child: Row(
@@ -170,7 +170,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               left: 24,
               right: 24,
               child: Card(
-                color: AppColors.bgCard.withOpacity(0.95),
+                color: AppColors.bgCard.withValues(alpha: 0.95),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),

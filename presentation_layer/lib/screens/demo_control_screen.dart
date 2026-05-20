@@ -148,6 +148,23 @@ class _DemoControlScreenState extends ConsumerState<DemoControlScreen> {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: () async {
+                      final response = await ApiService.post(ApiEndpoints.seedPhase3);
+                      if (!context.mounted) return;
+                      final msg = response['error'] == true
+                          ? 'Phase 3 seed failed'
+                          : 'Phase 3 demo data seeded';
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentBlue),
+                    child: const Text('SEED PHASE 3 DATA'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () async {
                       await ApiService.post(ApiEndpoints.resetSimulation);
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr(ref, 'systems_reset_complete'))));

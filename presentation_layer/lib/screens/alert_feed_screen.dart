@@ -50,105 +50,127 @@ class _AlertFeedScreenState extends ConsumerState<AlertFeedScreen> {
                 }).toList(),
               ),
             ),
-          Expanded(
-            child: alertsAsync.when(
-              data: (alerts) {
-                final filtered = alerts.where((a) {
-                  if (_selectedFilter == 'ALL') return true;
-                  return a.severity.toUpperCase() == _selectedFilter;
-                }).toList();
+            Expanded(
+              child: alertsAsync.when(
+                data: (alerts) {
+                  final filtered = alerts.where((a) {
+                    if (_selectedFilter == 'ALL') return true;
+                    return a.severity.toUpperCase() == _selectedFilter;
+                  }).toList();
 
-                if (filtered.isEmpty) {
-                  return Center(child: Text(tr(ref, 'alerts_none')));
-                }
+                  if (filtered.isEmpty) {
+                    return Center(child: Text(tr(ref, 'alerts_none')));
+                  }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final a = filtered[index];
-                    Color sevColor;
-                    switch (a.severity.toUpperCase()) {
-                      case 'CRITICAL': sevColor = AppColors.severityCritical; break;
-                      case 'HIGH': sevColor = AppColors.severityHigh; break;
-                      case 'MEDIUM': sevColor = AppColors.severityMedium; break;
-                      default: sevColor = AppColors.severityLow;
-                    }
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final a = filtered[index];
+                      Color sevColor;
+                      switch (a.severity.toUpperCase()) {
+                        case 'CRITICAL':
+                          sevColor = AppColors.severityCritical;
+                          break;
+                        case 'HIGH':
+                          sevColor = AppColors.severityHigh;
+                          break;
+                        case 'MEDIUM':
+                          sevColor = AppColors.severityMedium;
+                          break;
+                        default:
+                          sevColor = AppColors.severityLow;
+                      }
 
-                    final alertBody = isUrdu && a.urduBody.isNotEmpty ? a.urduBody : a.body;
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: AppColors.borderSubtle),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border(left: BorderSide(color: sevColor, width: 4)),
+                      final alertBody = isUrdu && a.urduBody.isNotEmpty ? a.urduBody : a.body;
+                      final createdAtLabel = a.createdAt.length >= 16
+                          ? a.createdAt.substring(0, 16).replaceFirst('T', ' ')
+                          : a.createdAt;
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(color: AppColors.borderSubtle),
                         ),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '⚠️ ${a.title}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(height: 8),
-                            if (isUrdu)
-                              Directionality(
-                                textDirection: TextDirection.rtl,
-                                child: Text(
-                                  alertBody,
-                                  style: GoogleFonts.notoNastaliqUrdu(
-                                    fontSize: 15,
-                                    height: 1.8,
-                                    color: AppColors.textSecondary,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border(left: BorderSide(color: sevColor, width: 4)),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '[ALERT] ${a.title}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              const SizedBox(height: 8),
+                              if (isUrdu)
+                                Directionality(
+                                  textDirection: TextDirection.rtl,
+                                  child: Text(
+                                    alertBody,
+                                    style: GoogleFonts.notoNastaliqUrdu(
+                                      fontSize: 15,
+                                      height: 1.8,
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
-                                ),
-                              )
-                            else
-                              Text(alertBody, style: Theme.of(context).textTheme.bodyMedium),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              children: a.channelsSent.map((c) => Chip(
-                                label: Text(c, style: const TextStyle(fontSize: 10)),
-                                padding: EdgeInsets.zero,
-                                backgroundColor: AppColors.bgElevated,
-                              )).toList(),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                a.acknowledged
-                                    ? Text(tr(ref, 'acknowledged'), style: const TextStyle(color: AppColors.severityLow, fontWeight: FontWeight.bold))
-                                    : ElevatedButton(
-                                        onPressed: () {
-                                          ref.read(firebaseServiceProvider).acknowledgeAlert(a.alertId);
-                                        },
-                                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgElevated),
-                                        child: Text(tr(ref, 'acknowledge')),
+                                )
+                              else
+                                Text(alertBody, style: Theme.of(context).textTheme.bodyMedium),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                children: a.channelsSent
+                                    .map(
+                                      (c) => Chip(
+                                        label: Text(c, style: const TextStyle(fontSize: 10)),
+                                        padding: EdgeInsets.zero,
+                                        backgroundColor: AppColors.bgElevated,
                                       ),
-                                Text(
-                                  a.createdAt.substring(0, 16).replaceFirst('T', ' '),
-                                  style: Theme.of(context).textTheme.labelSmall,
-                                ),
-                              ],
-                            ),
-                          ],
+                                    )
+                                    .toList(),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  a.acknowledged
+                                      ? Text(
+                                          tr(ref, 'acknowledged'),
+                                          style: const TextStyle(
+                                            color: AppColors.severityLow,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        )
+                                      : ElevatedButton(
+                                          onPressed: () {
+                                            ref.read(firebaseServiceProvider).acknowledgeAlert(a.alertId);
+                                          },
+                                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.bgElevated),
+                                          child: Text(tr(ref, 'acknowledge')),
+                                        ),
+                                  Text(
+                                    createdAtLabel,
+                                    style: Theme.of(context).textTheme.labelSmall,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text(tr(ref, 'loading_error'))),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, st) => Center(child: Text(tr(ref, 'loading_error'))),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

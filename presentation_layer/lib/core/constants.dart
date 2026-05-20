@@ -37,6 +37,8 @@ class FirebasePaths {
   static const String units          = 'units';
   static const String alerts         = 'alerts';
   static const String activeReroutes = 'routes/active_reroutes';
+  static const String dispatchTickets = 'dispatch_tickets';
+  static const String monitoringCycles = 'monitoring_cycles';
   static const String agentLogs      = 'agent_logs';
   static const String outcomeMetrics = 'outcome_metrics';
   static const String signalFeed     = 'signal_feed/recent_signals';
@@ -49,6 +51,7 @@ class ApiEndpoints {
   static String get baseUrl => kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
   static const String triggerScenario    = '/api/simulation/trigger';
   static const String resetSimulation    = '/api/simulation/reset';
+  static const String seedPhase3         = '/api/simulation/seed-phase3';
   static const String simulationStatus   = '/api/simulation/status';
   static const String listScenarios      = '/api/simulation/scenarios';
 }

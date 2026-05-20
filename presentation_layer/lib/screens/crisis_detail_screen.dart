@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../core/constants.dart';
+import '../models/crisis_model.dart';
 import '../providers/crisis_provider.dart';
 import '../providers/language_provider.dart';
 import '../widgets/language_toggle_button.dart';
@@ -121,6 +122,8 @@ class CrisisDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
+                _buildPredictiveTimeline(crisis),
+                const SizedBox(height: 16),
 
                 // Outcome Metrics
                 Text(tr(ref, 'outcome_metrics'), style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -129,11 +132,12 @@ class CrisisDetailScreen extends ConsumerWidget {
                   height: 200,
                   child: outcomeMetricsAsync.when(
                     data: (metrics) {
-                      // Mocking data if not available
-                      double beforeCongestion = (metrics['before_congestion'] ?? 85.0).toDouble();
-                      double afterCongestion = (metrics['after_congestion'] ?? 30.0).toDouble();
-                      double beforeVehicles = (metrics['before_stranded'] ?? 150.0).toDouble() / 5.0;
-                      double afterVehicles = (metrics['after_stranded'] ?? 20.0).toDouble() / 5.0;
+                      final before = metrics['before'] is Map ? Map<String, dynamic>.from(metrics['before']) : <String, dynamic>{};
+                      final after = metrics['after'] is Map ? Map<String, dynamic>.from(metrics['after']) : <String, dynamic>{};
+                      double beforeCongestion = (before['congestion_level'] ?? 85.0).toDouble();
+                      double afterCongestion = (after['congestion_level'] ?? 30.0).toDouble();
+                      double beforeVehicles = ((before['estimated_stranded_vehicles'] ?? 120.0).toDouble()) / 5.0;
+                      double afterVehicles = ((after['estimated_stranded_vehicles'] ?? 20.0).toDouble()) / 5.0;
 
                       return BarChart(
                         BarChartData(
@@ -198,6 +202,57 @@ class CrisisDetailScreen extends ConsumerWidget {
       },
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, st) => Scaffold(body: Center(child: Text('Error loading crisis: $e'))),
+    );
+  }
+
+  Widget _buildPredictiveTimeline(CrisisModel crisis) {
+    final hasPrediction = crisis.tPlus15.isNotEmpty || crisis.tPlus30.isNotEmpty || crisis.tPlus60.isNotEmpty;
+    if (!hasPrediction) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.bgElevated,
+        border: Border.all(color: AppColors.accentCyan.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PREDICTIVE TIMELINE',
+            style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 10),
+          _timelineRow('T+15min', crisis.tPlus15),
+          const SizedBox(height: 6),
+          _timelineRow('T+30min', crisis.tPlus30),
+          const SizedBox(height: 6),
+          _timelineRow('T+60min', crisis.tPlus60),
+        ],
+      ),
+    );
+  }
+
+  Widget _timelineRow(String label, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 66,
+          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.accentCyan)),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text.isEmpty ? 'No projection available.' : text,
+            style: GoogleFonts.inter(color: AppColors.textSecondary),
+          ),
+        ),
+      ],
     );
   }
 }

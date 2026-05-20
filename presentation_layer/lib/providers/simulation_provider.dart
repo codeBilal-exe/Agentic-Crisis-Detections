@@ -60,7 +60,7 @@ class SimulationNotifier extends StateNotifier<SimulationState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final response = await http.post(
-        Uri.parse('${ApiEndpoints.baseUrl}${ApiEndpoints.triggerScenario}$scenarioName'),
+        Uri.parse('${ApiEndpoints.baseUrl}${ApiEndpoints.triggerScenario}/$scenarioName'),
       );
       if (response.statusCode == 200) {
         state = state.copyWith(
