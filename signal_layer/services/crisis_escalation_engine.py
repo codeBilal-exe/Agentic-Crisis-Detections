@@ -1,111 +1,140 @@
-"""
-CIRO Crisis Escalation Engine
-Monitors active crises for escalation indicators based on new signals,
-trigger keywords, time thresholds, and geographic proximity.
-"""
-
 import math
 from datetime import datetime, timezone
 
 
-# Escalation rules per crisis type
 ESCALATION_RULES = {
     "urban_flooding": {
-        "triggers": ["rainfall_increasing", "second_location_report", "casualty_mention"],
-        "trigger_keywords": {
-            "rainfall_increasing": ["barish badh rahi", "rain increasing", "more flooding", "paani badh raha", "water rising"],
-            "second_location_report": [],  # checked via location analysis
-            "casualty_mention": ["maut", "khoon", "zakhmi", "dead", "injured", "behosh", "drowned", "doob gaya"],
-        },
         "action": "dispatch_backup_unit",
         "time_threshold_minutes": 30,
-    },
-    "heatwave": {
-        "triggers": ["temperature_rising", "hospital_reports", "power_grid_stress"],
         "trigger_keywords": {
-            "temperature_rising": ["garmi badh rahi", "temperature rising", "aur garmi", "record heat"],
-            "hospital_reports": ["hospital", "emergency ward", "heatstroke", "behosh", "admitted"],
-            "power_grid_stress": ["bijli gul", "load shedding", "power cut", "blackout", "transformer"],
+            "rainfall_increasing": [
+                "rain increasing",
+                "barish badh rahi",
+                "water rising",
+                "paani barh raha",
+                "flood getting worse",
+            ],
+            "casualty_mention": [
+                "injured",
+                "zakhmi",
+                "dead",
+                "maut",
+                "drowned",
+                "doob gaya",
+            ],
         },
-        "action": "activate_additional_cooling_centers",
-        "time_threshold_minutes": 60,
     },
     "road_accident": {
-        "triggers": ["secondary_collision", "emergency_vehicle_blocked"],
-        "trigger_keywords": {
-            "secondary_collision": ["aur accident", "another crash", "doosra accident", "pile-up", "more vehicles"],
-            "emergency_vehicle_blocked": ["ambulance phas", "rescue stuck", "road completely blocked", "rasta band"],
-        },
         "action": "request_police_clearance",
         "time_threshold_minutes": 20,
+        "trigger_keywords": {
+            "secondary_collision": [
+                "another crash",
+                "doosra accident",
+                "pile-up",
+                "more vehicles",
+            ],
+            "emergency_vehicle_blocked": [
+                "ambulance stuck",
+                "rescue stuck",
+                "road blocked",
+                "rasta band",
+            ],
+        },
+    },
+    "heatwave": {
+        "action": "activate_additional_cooling_centers",
+        "time_threshold_minutes": 60,
+        "trigger_keywords": {
+            "temperature_rising": [
+                "temperature rising",
+                "record heat",
+                "aur garmi",
+                "garmi barh rahi",
+            ],
+            "hospital_overload": [
+                "hospital full",
+                "heatstroke",
+                "emergency ward",
+                "patients overflow",
+            ],
+            "power_grid_stress": [
+                "load shedding",
+                "power cut",
+                "blackout",
+                "bijli gul",
+            ],
+        },
     },
     "infrastructure_failure": {
-        "triggers": ["cascading_failure", "gas_leak_detected", "fire_spreading"],
-        "trigger_keywords": {
-            "cascading_failure": ["doosra transformer", "another transformer", "aur bijli gul", "cascading"],
-            "gas_leak_detected": ["gas leak", "gas ki badboo", "gas smell", "gas pipeline"],
-            "fire_spreading": ["aag phail", "fire spreading", "aur aag", "buildings affected", "dhuan badh raha"],
-        },
         "action": "evacuate_area",
         "time_threshold_minutes": 15,
+        "trigger_keywords": {
+            "fire_spreading": [
+                "fire spreading",
+                "aag phail",
+                "smoke increasing",
+                "dhuan barh raha",
+            ],
+            "gas_leak": [
+                "gas leak",
+                "gas smell",
+                "gas ki badboo",
+            ],
+            "cascading_failure": [
+                "another transformer",
+                "more outages",
+                "aur bijli gul",
+            ],
+        },
     },
 }
 
 
 def calculate_distance_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
-    """Calculate distance between two coordinates using haversine formula."""
-    R = 6371.0  # Earth radius in km
-
-    lat1_rad = math.radians(lat1)
-    lat2_rad = math.radians(lat2)
-    dlat = math.radians(lat2 - lat1)
-    dlng = math.radians(lng2 - lng1)
-
-    a = math.sin(dlat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlng / 2) ** 2
+    earth_radius_km = 6371.0
+    lat1_r = math.radians(lat1)
+    lat2_r = math.radians(lat2)
+    d_lat = math.radians(lat2 - lat1)
+    d_lng = math.radians(lng2 - lng1)
+    a = (
+        math.sin(d_lat / 2) ** 2
+        + math.cos(lat1_r) * math.cos(lat2_r) * math.sin(d_lng / 2) ** 2
+    )
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return earth_radius_km * c
 
-    return R * c
+
+def _extract_crisis_coords(crisis_profile: dict) -> tuple[float, float]:
+    affected_area = crisis_profile.get("affected_area", {}) or {}
+    lat = crisis_profile.get("affected_lat") or affected_area.get("lat") or 0.0
+    lng = crisis_profile.get("affected_lng") or affected_area.get("lng") or 0.0
+    return float(lat), float(lng)
 
 
 def analyze_signal_triggers(signals: list, crisis_type: str) -> dict:
-    """Check signal texts for escalation trigger keywords."""
     rules = ESCALATION_RULES.get(crisis_type, {})
-    trigger_keywords = rules.get("trigger_keywords", {})
+    keyword_groups = rules.get("trigger_keywords", {})
+    matched = set()
 
-    matched_triggers = []
-    for trigger_name, keywords in trigger_keywords.items():
-        for signal in signals:
-            raw_text = signal.get("raw_text", "").lower()
-            normalized_text = signal.get("normalized_text", "").lower()
-            combined_text = f"{raw_text} {normalized_text}"
+    for signal in signals:
+        raw_text = str(signal.get("raw_text", "")).lower()
+        normalized_text = str(signal.get("normalized_text", "")).lower()
+        text_blob = f"{raw_text} {normalized_text}"
 
-            for keyword in keywords:
-                if keyword.lower() in combined_text:
-                    matched_triggers.append(trigger_name)
-                    break
-            if trigger_name in matched_triggers:
-                break
+        for trigger_name, keywords in keyword_groups.items():
+            if any(keyword.lower() in text_blob for keyword in keywords):
+                matched.add(trigger_name)
 
     return {
-        "matched_triggers": list(set(matched_triggers)),
-        "trigger_count": len(set(matched_triggers)),
+        "matched_triggers": sorted(matched),
+        "trigger_count": len(matched),
     }
 
 
 def check_escalation_needed(crisis_profile: dict, new_signals: list) -> dict:
-    """
-    Check if an active crisis needs escalation based on new signals.
-
-    Args:
-        crisis_profile: The active CrisisProfile from Firebase
-        new_signals: Recent signals from the signal feed
-
-    Returns:
-        dict with escalation_needed, reason, recommended_action, etc.
-    """
     crisis_type = crisis_profile.get("crisis_type", "unknown")
     rules = ESCALATION_RULES.get(crisis_type)
-
     if not rules:
         return {
             "escalation_needed": False,
@@ -115,73 +144,66 @@ def check_escalation_needed(crisis_profile: dict, new_signals: list) -> dict:
             "new_signal_count": len(new_signals),
         }
 
-    # Get crisis location
-    crisis_lat = crisis_profile.get("affected_lat", 0)
-    crisis_lng = crisis_profile.get("affected_lng", 0)
-    if not crisis_lat:
-        affected_area = crisis_profile.get("affected_area", {})
-        crisis_lat = affected_area.get("lat", 0)
-        crisis_lng = affected_area.get("lng", 0)
+    crisis_lat, crisis_lng = _extract_crisis_coords(crisis_profile)
 
-    # Check how many new signals are from the crisis zone (within 3km)
-    signals_in_zone = []
+    signals_in_crisis_zone = []
     for signal in new_signals:
-        location = signal.get("location", {})
-        sig_lat = location.get("lat", 0)
-        sig_lng = location.get("lng", 0)
-        if sig_lat and sig_lng and crisis_lat and crisis_lng:
-            distance = calculate_distance_km(crisis_lat, crisis_lng, sig_lat, sig_lng)
-            if distance <= 3.0:
-                signals_in_zone.append(signal)
+        location = signal.get("location", {}) or {}
+        sig_lat = location.get("lat")
+        sig_lng = location.get("lng")
+        if sig_lat is None or sig_lng is None or crisis_lat == 0.0 or crisis_lng == 0.0:
+            continue
+        distance_km = calculate_distance_km(crisis_lat, crisis_lng, float(sig_lat), float(sig_lng))
+        if distance_km <= 3.0:
+            signals_in_crisis_zone.append(signal)
 
-    # Check time since crisis detected
-    detected_at = crisis_profile.get("detected_at", "")
-    minutes_elapsed = 0
+    minutes_elapsed = 0.0
+    detected_at = crisis_profile.get("detected_at")
     if detected_at:
         try:
-            detected_time = datetime.fromisoformat(detected_at.replace("Z", "+00:00"))
-            now = datetime.now(timezone.utc)
-            minutes_elapsed = (now - detected_time).total_seconds() / 60
-        except (ValueError, TypeError):
-            minutes_elapsed = 0
+            start_ts = datetime.fromisoformat(str(detected_at).replace("Z", "+00:00"))
+            minutes_elapsed = (datetime.now(timezone.utc) - start_ts).total_seconds() / 60.0
+        except (TypeError, ValueError):
+            minutes_elapsed = 0.0
 
-    time_threshold = rules["time_threshold_minutes"]
-    time_exceeded = minutes_elapsed > time_threshold
+    trigger_info = analyze_signal_triggers(new_signals, crisis_type)
+    threshold_minutes = int(rules["time_threshold_minutes"])
 
-    # Analyze trigger keywords in new signals
-    trigger_analysis = analyze_signal_triggers(new_signals, crisis_type)
-
-    # Determine escalation
-    escalation_needed = False
     reasons = []
-    trigger_matched = "none"
+    escalation_needed = False
 
-    # Condition 1: 2+ new signals from crisis zone
-    if len(signals_in_zone) >= 2:
+    if len(signals_in_crisis_zone) >= 2:
         escalation_needed = True
-        reasons.append(f"{len(signals_in_zone)} new signals detected within 3km of crisis zone")
+        reasons.append(
+            f"{len(signals_in_crisis_zone)} new signals found within 3km of crisis zone"
+        )
 
-    # Condition 2: Time threshold exceeded with ongoing signals
-    if time_exceeded and len(signals_in_zone) >= 1:
+    if minutes_elapsed > threshold_minutes and len(signals_in_crisis_zone) >= 1:
         escalation_needed = True
-        reasons.append(f"Time threshold exceeded ({minutes_elapsed:.0f} min > {time_threshold} min) with ongoing activity")
+        reasons.append(
+            f"Time threshold exceeded ({minutes_elapsed:.0f} > {threshold_minutes} minutes)"
+        )
 
-    # Condition 3: Trigger keywords matched
-    if trigger_analysis["trigger_count"] >= 1:
+    if trigger_info["trigger_count"] >= 1:
         escalation_needed = True
-        trigger_matched = ", ".join(trigger_analysis["matched_triggers"])
-        reasons.append(f"Escalation triggers matched: {trigger_matched}")
+        reasons.append(
+            "Keyword triggers detected: " + ", ".join(trigger_info["matched_triggers"])
+        )
 
-    reason = ". ".join(reasons) if reasons else "No escalation indicators detected"
+    trigger_matched = (
+        ", ".join(trigger_info["matched_triggers"])
+        if trigger_info["matched_triggers"]
+        else "none"
+    )
 
     return {
         "escalation_needed": escalation_needed,
-        "reason": reason,
+        "reason": ". ".join(reasons) if reasons else "No escalation indicators detected",
         "recommended_action": rules["action"] if escalation_needed else "continue_monitoring",
         "trigger_matched": trigger_matched,
         "new_signal_count": len(new_signals),
-        "signals_in_crisis_zone": len(signals_in_zone),
+        "signals_in_crisis_zone": len(signals_in_crisis_zone),
         "minutes_elapsed": round(minutes_elapsed, 1),
-        "time_threshold_minutes": time_threshold,
+        "time_threshold_minutes": threshold_minutes,
         "crisis_type": crisis_type,
     }
