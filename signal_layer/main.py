@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from routers import signals, crisis, units, simulation
+from routers import signals, crisis, units, simulation, dispatch
 
 app = FastAPI(title="CIRO Mock Signal Server", version="1.0.0")
 
@@ -17,6 +17,7 @@ app.include_router(signals.router, prefix="/api/signals", tags=["Signals"])
 app.include_router(crisis.router, prefix="/api/crisis", tags=["Crisis"])
 app.include_router(units.router, prefix="/api/units", tags=["Units"])
 app.include_router(simulation.router, prefix="/api/simulation", tags=["Simulation"])
+app.include_router(dispatch.router, prefix="/api/dispatch", tags=["Dispatch"])
 
 
 @app.get("/")

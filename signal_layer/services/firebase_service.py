@@ -148,6 +148,7 @@ class FirebaseService:
             },
             "alerts": {},
             "routes": {"active_reroutes": {}},
+            "dispatch_tickets": {},
             "agent_logs": {},
             "signal_feed": {"recent_signals": {}},
             "outcome_metrics": {
