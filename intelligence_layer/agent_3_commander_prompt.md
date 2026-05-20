@@ -136,106 +136,52 @@ If severity == CRITICAL AND escalation_prediction mentions spreading: add `ESCAL
 
 ### STEP 6: AUTHORITY NOTIFICATION ACTIONS (NEW — CRITICAL FEATURE)
 
-Every ActionPlan MUST include `notify_authority` actions for the relevant authorities. These are SEPARATE actions with their own priority level and dedicated notification messages.
+Every ActionPlan MUST include `notify_authority` actions for the relevant authorities based on severity (HIGH or CRITICAL) and specific triggers. These actions represent a formal dispatch of real authorities.
 
-#### Authority Notification Matrix:
+#### Authority Notification System:
 
-| Authority | When to Notify | Priority | What to Tell Them |
-|---|---|---|---|
-| **Rescue 1122 HQ** | Every crisis | 1 (always first) | Situation brief + units dispatched + ETA |
-| **CDA Traffic Police** | flooding, road_accident | 1 | Road closure order + alternate route |
-| **Local Police (Islamabad Police / Punjab Police)** | road_accident, infrastructure_failure, earthquake | 2 | Area cordoning request + crowd control |
-| **Fire Department (Rescue 1122 Fire Wing)** | infrastructure_failure + fire, earthquake | 1 | Fire status + gas leak risk + evacuation scope |
-| **PDMA (Provincial Disaster Management Authority)** | flooding HIGH/CRITICAL, heatwave, earthquake, landslide | 2 | Severity brief + relief point activation + PDMA team dispatch |
-| **NHA (National Highway Authority)** | road_accident on motorway, landslide on NHW | 2 | Road closure notification + diversion order |
-| **IESCO / Utility Company** | infrastructure_failure (power) | 2 | Transformer status + affected households + restoration timeline |
-| **NDMA (National Disaster Management Authority)** | CRITICAL severity only, earthquake, mass casualty | 3 | Full situation report + inter-provincial coordination request |
-| **Hospital Administration** | road_accident with casualties, heatwave CRITICAL | 2 | Casualty count + ETA + bed reservation request |
+**POLICE (via Police Emergency 15):**
+- **Trigger**: `road_accident`, `civil_disturbance`, `infrastructure_failure`
+- **Action**: Generate formal police dispatch ticket with location, incident type, units needed
+- **Message format**: "CIRO DISPATCH — Police Unit Required: [Location]. Incident: [Type]. Severity: [Level]. Coordinate with Rescue 1122."
 
-#### Notification Message Templates:
+**FIRE DEPARTMENT:**
+- **Trigger**: `infrastructure_failure` with fire/explosion keywords, any aag/dhuan signals
+- **Action**: Dispatch fire brigade with cordon radius recommendation
+- **Message format**: "FIRE ALERT — [Location]. Transformer/Building fire reported. Dispatch 2 units. Cordon [X] meter radius. Evacuate [N] households."
 
-**Police Notification:**
-```
-CIRO EMERGENCY NOTIFICATION — [timestamp]
-Crisis: [type] at [location]
-Severity: [severity]
-Action Required:
-1. Cordon off [specific area] immediately
-2. Redirect civilian traffic away from [road]
-3. Clear emergency vehicle corridor on [approach route]
-4. Crowd control at [relief point / accident site]
-Rescue 1122 units en route — ensure clear approach.
-Contact: CIRO Operations Center
-```
+**PDMA (Provincial Disaster Management Authority):**
+- **Trigger**: `urban_flooding` HIGH/CRITICAL, `earthquake`, `landslide`
+- **Action**: Formal PDMA activation request with relief center recommendation
+- **Message format**: "PDMA ACTIVATION REQUEST — [Crisis Type] at [Location]. Estimated [N] people affected. Request relief camp at [Location]. CIRO Confidence: [X]%."
 
-**PDMA Notification:**
-```
-CIRO SITUATION REPORT — [timestamp]
-Crisis Type: [type] | Location: [area] | Severity: [severity]
-Confirmed Signals: [N] corroborating signals. Confidence: [score]
-Estimated Impact: [N] people affected, [N] casualties estimated
-Immediate Actions Taken:
-- Unit [name] dispatched, ETA [N] minutes
-- Traffic rerouted via [route]
-- Alert broadcast to [N] channels
-PDMA Support Required:
-- [PDMA team dispatch to location]
-- [Water pumps / relief supplies / shelter activation as applicable]
-- Coordinate with: [NHA / IESCO / Police as applicable]
-Escalation: [escalation_prediction summary]
-```
+**NDMA (National Disaster Management Authority):**
+- **Trigger**: `earthquake` CRITICAL, multi-city crisis, CRITICAL + CRITICAL simultaneously
+- **Action**: National-level escalation with full situation report
+- **Message format**: "CIRO NATIONAL ESCALATION ALERT — *** PROVINCIAL COORDINATION REQUIRED *** Crisis: [Type] at [Location]. Severity: CRITICAL. Estimated Casualties: [N]. Requesting federal resource allocation."
 
-**NDMA Notification (CRITICAL only):**
-```
-CIRO NATIONAL ESCALATION ALERT — [timestamp]
-*** PROVINCIAL COORDINATION REQUIRED ***
-Crisis: [type] | Location: [area, province]
-Severity: CRITICAL | Confidence: [score]
-Estimated Casualties: [fatalities] fatalities, [critical] critical, [minor] minor
-Current Response: [what is deployed]
-Why NDMA Needed: [reason — mass casualty / inter-provincial / exceeded provincial capacity]
-Requesting: [inter-provincial unit support / federal resource allocation / national media alert]
-PDMA [province] has been notified. Awaiting federal coordination.
-```
+**NHA (National Highway Authority):**
+- **Trigger**: motorway accident, landslide on highway
+- **Action**: Road closure order with alternate route activation
+- **Message format**: "CIRO ROAD CLOSURE NOTIFICATION — Road: [Highway]. Reason: [Type]. Alternate Route: [Route]. Deploy NHA patrol and activate variable message signs."
 
-**NHA Notification (motorway/highway incidents):**
-```
-CIRO ROAD CLOSURE NOTIFICATION — [timestamp]
-Road: [highway name] | Section: [KM markers]
-Reason: [crisis type] | Status: CLOSED / RESTRICTED
-Alternate Route: [route name] via [waypoints]
-Agency Coordinating Diversion: CDA Traffic Police / [local traffic authority]
-Estimated Closure Duration: [resolution_minutes] minutes
-Action Required from NHA:
-1. Deploy NHA patrol to [location]
-2. Activate variable message signs on [highway]
-3. Coordinate with motorway police for traffic management
-```
+**WAPDA/IESCO (Power Authority):**
+- **Trigger**: transformer explosion, power grid failure
+- **Action**: Emergency power restoration request with affected area grid reference
+- **Message format**: "CIRO POWER GRID ALERT — Transformer/Grid failure at [Location]. Affected households: [N]. Deploy emergency repair team."
 
-**Hospital Notification:**
-```
-CIRO MEDICAL ALERT — [timestamp]
-Incident: [type] at [location]
-Estimated Casualties: [fatalities] fatalities, [critical] critical injuries, [minor] minor injuries
-Medical Units Dispatched: [unit name], ETA to scene: [N] minutes
-Requesting [N] trauma/emergency beds at [hospital name]
-Estimated patient arrival at hospital: [scene_ETA + transport_time] minutes
-Triage classification: [MASS CASUALTY / STANDARD EMERGENCY]
-Backup facility: [backup_hospital name] — please coordinate capacity.
-```
+**HOSPITALS:**
+- **Trigger**: `casualties_likely = true` in any crisis
+- **Action**: Pre-alert nearest hospitals with estimated casualty count
+- **Check capacity**: if `estimated_casualties > 20` alert multiple hospitals
+- **Nearest hospitals database**:
+  - Islamabad: PIMS, Poly Clinic, PMC, Benazir Bhutto Hospital
+  - Lahore: Services Hospital, Mayo Hospital, Jinnah Hospital
+  - Rawalpindi: Holy Family Hospital, CMH Rawalpindi
+- **Message format**: "CIRO MEDICAL ALERT — Incident: [Type] at [Location]. Estimated Casualties: [N]. Requesting trauma beds at [Hospital]. ETA: [N] minutes."
 
-**Fire Department Notification:**
-```
-CIRO FIRE/HAZMAT ALERT — [timestamp]
-Location: [area, specific address if known]
-Type: [transformer explosion / building fire / gas leak]
-Fire Status: [ACTIVE / CONTAINED / SUSPECTED]
-Gas Leak Risk: [true/false]
-Structural Collapse Risk: [true/false]
-Evacuation Radius Required: [distance]m
-Rescue 1122 Fire Unit [ID] dispatched, ETA [N] minutes
-Police cordoning [area] — coordinate entry corridor.
-```
+#### Dispatch Ticket Requirement:
+Each authority action must generate a formal `dispatch_ticket` with a unique `ticket_id` inside the action block.
 
 ---
 
@@ -393,11 +339,12 @@ Must answer these 5 questions in 4-5 sentences total:
       "action_id": "act_005",
       "action_type": "notify_authority",
       "priority": 1,
-      "authority": "CDA Traffic Police",
-      "authority_type": "traffic_police",
-      "notification_message": "CIRO EMERGENCY NOTIFICATION — [timestamp]\nCrisis: Urban Flooding at G-10 Islamabad\nSeverity: HIGH\nAction Required:\n1. Cordon off G-10 Markaz Road immediately\n2. Redirect civilian traffic to Srinagar Highway\n3. Post wardens at IJP Road / G-10 junction\n4. Clear emergency vehicle corridor on Srinagar Highway\nRescue 1122 Delta Team en route — ensure clear approach.",
+      "authority": "Police (Islamabad Police)",
+      "authority_type": "police",
+      "ticket_id": "ticket_[6char_hex]",
+      "notification_message": "CIRO DISPATCH — Police Unit Required: G-10 Islamabad. Incident: Urban Flooding. Severity: HIGH. Coordinate with Rescue 1122.",
       "contact_channel": "in_app_notification + sms_mock",
-      "instruction": "Send emergency notification to CDA Traffic Police dispatcher via CIRO dashboard. Await acknowledgment within 5 minutes."
+      "instruction": "Send emergency notification to Police dispatcher via CIRO dashboard. Await acknowledgment within 5 minutes."
     },
     {
       "action_id": "act_006",
@@ -405,9 +352,10 @@ Must answer these 5 questions in 4-5 sentences total:
       "priority": 2,
       "authority": "PDMA Islamabad",
       "authority_type": "pdma",
-      "notification_message": "CIRO SITUATION REPORT — [timestamp]\nCrisis Type: Urban Flooding | Location: G-10 Islamabad | Severity: HIGH\nConfidence: 91% | Signals: 5 corroborating\nEstimated Impact: 4,800 people affected, 0 fatalities, 4 critical injuries, 12 minor\nActions Taken: Rescue 1122 Delta dispatched (ETA 8 min), Srinagar Highway reroute activated, PUBLIC ALERT broadcast\nPDMA Support Required:\n- Deploy PDMA Assessment Team to G-10 Community Center\n- Bring portable water pumps (minimum 3)\n- Activate G-10 Community Center relief point\nEscalation: If rain continues, spread to I-9 sector expected within 60-90 min.",
+      "ticket_id": "ticket_[6char_hex]",
+      "notification_message": "PDMA ACTIVATION REQUEST — Urban Flooding at G-10 Islamabad. Estimated 4800 people affected. Request relief camp at G-10 Community Center. CIRO Confidence: 91%.",
       "contact_channel": "pdma_dashboard + sms_mock",
-      "instruction": "Dispatch PDMA Situation Report to PDMA Islamabad Operations Center. Request PDMA Assessment Team (pdma-team-01) deployment to G-10 Community Center."
+      "instruction": "Dispatch PDMA Situation Report to PDMA Islamabad Operations Center."
     },
     {
       "action_id": "act_007",
@@ -415,7 +363,8 @@ Must answer these 5 questions in 4-5 sentences total:
       "priority": 2,
       "authority": "PIMS Hospital Administration",
       "authority_type": "hospital",
-      "notification_message": "CIRO MEDICAL ALERT — [timestamp]\nIncident: Urban Flooding — G-10 Islamabad\nEstimated Casualties: 0 fatalities, 4 critical injuries, 12 minor injuries\nMedical Unit: Rescue 1122 Delta (ETA to scene: 8 min)\nRequesting: 16 emergency/trauma beds at PIMS\nEstimated patient arrival at PIMS: 20-25 minutes from now\nTriage: STANDARD EMERGENCY (not mass casualty at this time)\nBackup: Poly Clinic Hospital — please coordinate capacity.",
+      "ticket_id": "ticket_[6char_hex]",
+      "notification_message": "CIRO MEDICAL ALERT — Incident: Urban Flooding at G-10 Islamabad. Estimated Casualties: 16. Requesting trauma beds at PIMS Hospital. ETA: 8 minutes.",
       "contact_channel": "in_app_notification",
       "instruction": "Alert PIMS Emergency Ward via CIRO notification. Log hospital notification confirmation."
     },

@@ -129,16 +129,16 @@ WRITE `/active_crises/[crisis_id]/relief_points/[relief_id]`:
 ```
 
 #### Action Handler: `notify_authority` (NEW — CRITICAL)
-WRITE `/notifications/[notification_id]`:
+WRITE `/dispatch_tickets/[ticket_id]`:
 ```json
 {
-  "notification_id": "notif_[6char_hex]",
+  "ticket_id": "[ticket_id from action]",
   "crisis_id": "[crisis_id]",
   "plan_id": "[plan_id]",
-  "authority": "[authority name from action — e.g., 'CDA Traffic Police']",
-  "authority_type": "[authority_type — e.g., 'traffic_police', 'pdma', 'ndma', 'police', 'fire', 'hospital', 'utility']",
+  "authority": "[authority name from action]",
+  "authority_type": "[authority_type]",
   "notification_message": "[full notification message from Commander action]",
-  "contact_channel": "[in_app_notification / sms_mock / pdma_dashboard]",
+  "contact_channel": "[contact_channel]",
   "sent_at": "[ISO timestamp]",
   "acknowledged": false,
   "priority": "[action priority]"
@@ -150,9 +150,9 @@ Also WRITE agent log for each authority notification:
 {
   "timestamp": "[now ISO]",
   "agent": "Dispatcher",
-  "message": "Authority notification sent to [authority name] via [channel]. Crisis: [crisis_id]. Type: [authority_type]. Awaiting acknowledgment.",
-  "data_ref": "[notification_id]",
-  "type": "authority_notification"
+  "message": "Authority notification sent to [authority name] via [channel]. Crisis: [crisis_id]. Ticket ID: [ticket_id]. Awaiting acknowledgment.",
+  "data_ref": "[ticket_id]",
+  "type": "AUTHORITY_NOTIFIED"
 }
 ```
 
@@ -341,8 +341,8 @@ UPDATE `/system_state`:
       "action_id": "act_005",
       "action_type": "notify_authority",
       "status": "EXECUTED",
-      "firebase_path": "/notifications/notif_abc001",
-      "change_summary": "Emergency notification sent to CDA Traffic Police. Road cordoning and diversion instructions dispatched. Awaiting acknowledgment.",
+      "firebase_path": "/dispatch_tickets/ticket_abc001",
+      "change_summary": "Police dispatch ticket generated. Location: G-10 Islamabad. Awaiting acknowledgment.",
       "timestamp": "[ISO timestamp]"
     },
     {
@@ -350,7 +350,7 @@ UPDATE `/system_state`:
       "action_id": "act_006",
       "action_type": "notify_authority",
       "status": "EXECUTED",
-      "firebase_path": "/notifications/notif_abc002",
+      "firebase_path": "/dispatch_tickets/ticket_abc002",
       "change_summary": "PDMA Islamabad Situation Report sent. PDMA Assessment Team deployment requested. Water pumps and relief supplies ordered.",
       "timestamp": "[ISO timestamp]"
     },
@@ -359,7 +359,7 @@ UPDATE `/system_state`:
       "action_id": "act_007",
       "action_type": "notify_authority",
       "status": "EXECUTED",
-      "firebase_path": "/notifications/notif_abc003",
+      "firebase_path": "/dispatch_tickets/ticket_abc003",
       "change_summary": "PIMS Hospital Administration alerted for 16 emergency beds. Estimated patient arrival: 20-25 minutes. Poly Clinic Hospital on backup.",
       "timestamp": "[ISO timestamp]"
     },
@@ -375,21 +375,21 @@ UPDATE `/system_state`:
   ],
   "authorities_notified": [
     {
-      "authority": "CDA Traffic Police",
+      "authority": "Police (Islamabad Police)",
       "channel": "in_app_notification + sms_mock",
-      "notification_id": "notif_abc001",
+      "ticket_id": "ticket_abc001",
       "acknowledged": false
     },
     {
       "authority": "PDMA Islamabad",
       "channel": "pdma_dashboard + sms_mock",
-      "notification_id": "notif_abc002",
+      "ticket_id": "ticket_abc002",
       "acknowledged": false
     },
     {
       "authority": "PIMS Hospital Administration",
       "channel": "in_app_notification",
-      "notification_id": "notif_abc003",
+      "ticket_id": "ticket_abc003",
       "acknowledged": false
     }
   ],
@@ -422,9 +422,9 @@ UPDATE `/system_state`:
     "/active_crises/crisis_abc123/relief_points/relief_001",
     "/active_crises/crisis_abc123/casualty_data",
     "/active_crises/crisis_abc123/hospital_assignment",
-    "/notifications/notif_abc001",
-    "/notifications/notif_abc002",
-    "/notifications/notif_abc003",
+    "/dispatch_tickets/ticket_abc001",
+    "/dispatch_tickets/ticket_abc002",
+    "/dispatch_tickets/ticket_abc003",
     "/outcome_metrics/after",
     "/system_state",
     "/agent_logs/[multiple]"
